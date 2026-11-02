@@ -1,0 +1,333 @@
+#!/usr/bin/env python3
+"""
+AeroDENS Unified Firmware & Partition Builder (./build-all)
+-----------------------------------------------------------
+1. Builds all asset containers (`build/logo.bin`, `build/anim.bin`) and C UI icons (`src/os/ui/icons/`).
+2. Compiles both `[env:bootloader]` and `[env:os]` via PlatformIO.
+3. Exports `build/bootloader.bin`, `build/os.bin`, `build/logo.bin`, `build/anim.bin`.
+4. Generates `build/flashinfo.json` (and updates `flashinfo.txt`) with exact partition & 4 KB sector
+   start/end addresses, sector indices, sizes, CRC32, and SHA-256 checksums for the flasher tool.
+5. Packages all binaries and metadata into `build/aerodens_firmware.tar`.
+"""
+
+import binascii
+import datetime
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tarfile
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent
+BUILD_DIR = PROJECT_ROOT / "build"
+
+FLASH_BASE_ADDR = 0x08000000
+FLASH_TOTAL_BYTES = 3840 * 1024  # 3,932,160 bytes (3,840 KB)
+FLASH_END_ADDR = FLASH_BASE_ADDR + FLASH_TOTAL_BYTES - 1  # 0x083BFFFF
+SECTOR_SIZE = 4096  # 4 KB per GD32H7 FMC sector
+TOTAL_SECTORS = FLASH_TOTAL_BYTES // SECTOR_SIZE  # 960 sectors (0..959)
+
+PARTITIONS_SPEC = [
+    {
+        "name": "bootloader",
+        "filename": "bootloader.bin",
+        "description": "Stage-1 Bootloader Partition",
+        "start_addr": 0x08000000,
+        "end_addr": 0x0800FFFF,
+        "max_bytes": 64 * 1024,
+    },
+    {
+        "name": "os",
+        "filename": "os.bin",
+        "description": "Main OS / Application Partition",
+        "start_addr": 0x08010000,
+        "end_addr": 0x0817FFFF,
+        "max_bytes": 1472 * 1024,
+    },
+    {
+        "name": "logo",
+        "filename": "logo.bin",
+        "description": "Static Splash Image Container (RLE565)",
+        "start_addr": 0x08180000,
+        "end_addr": 0x081FFFFF,
+        "max_bytes": 512 * 1024,
+    },
+    {
+        "name": "anim",
+        "filename": "anim.bin",
+        "description": "Boot Animation Container (Delta-RLE565)",
+        "start_addr": 0x08200000,
+        "end_addr": 0x083BFFFF,
+        "max_bytes": 1792 * 1024,
+    },
+]
+
+
+def align_up(val: int, align: int) -> int:
+    return (val + align - 1) & ~(align - 1)
+
+
+def run_step(title: str, cmd: list[str], env: dict | None = None) -> None:
+    print(f"\n==> {title}")
+    print("    $ " + " ".join(cmd))
+    subprocess.run(cmd, cwd=str(PROJECT_ROOT), env=env, check=True)
+
+
+def compute_hashes(path: Path) -> tuple[int, str]:
+    data = path.read_bytes()
+    crc32 = binascii.crc32(data) & 0xFFFFFFFF
+    sha256 = hashlib.sha256(data).hexdigest()
+    return crc32, sha256
+
+
+def generate_flashinfo_json(out_json_path: Path) -> dict:
+    partitions_info = []
+
+    for spec in PARTITIONS_SPEC:
+        bin_path = BUILD_DIR / spec["filename"]
+        if not bin_path.is_file():
+            raise FileNotFoundError(f"Missing required partition binary: {bin_path}")
+
+        size_bytes = bin_path.stat().st_size
+        aligned_size = max(SECTOR_SIZE, align_up(size_bytes, SECTOR_SIZE))
+        if size_bytes > spec["max_bytes"]:
+            raise ValueError(
+                f"Partition '{spec['name']}' binary ({size_bytes} B) exceeds max partition size ({spec['max_bytes']} B)!"
+            )
+
+        crc32_val, sha256_str = compute_hashes(bin_path)
+
+        part_sec_start = (spec["start_addr"] - FLASH_BASE_ADDR) // SECTOR_SIZE
+        part_sec_count = spec["max_bytes"] // SECTOR_SIZE
+        part_sec_end = part_sec_start + part_sec_count - 1
+
+        img_sec_count = aligned_size // SECTOR_SIZE
+        img_sec_start = part_sec_start
+        img_sec_end = img_sec_start + img_sec_count - 1
+        img_end_addr = spec["start_addr"] + size_bytes - 1 if size_bytes > 0 else spec["start_addr"]
+        img_aligned_end_addr = spec["start_addr"] + aligned_size - 1
+
+        sectors_list = []
+        for s_idx in range(img_sec_start, img_sec_end + 1):
+            sec_start_addr = FLASH_BASE_ADDR + (s_idx * SECTOR_SIZE)
+            sec_end_addr = sec_start_addr + SECTOR_SIZE - 1
+            offset_in_img = (s_idx - img_sec_start) * SECTOR_SIZE
+            rem = size_bytes - offset_in_img
+            payload_bytes = min(SECTOR_SIZE, max(0, rem))
+            sectors_list.append(
+                {
+                    "sector": s_idx,
+                    "offset_in_image": f"0x{offset_in_img:06X}",
+                    "start_addr": f"0x{sec_start_addr:08X}",
+                    "end_addr": f"0x{sec_end_addr:08X}",
+                    "start_addr_dec": sec_start_addr,
+                    "end_addr_dec": sec_end_addr,
+                    "sector_size_bytes": SECTOR_SIZE,
+                    "payload_bytes": payload_bytes,
+                }
+            )
+
+        partitions_info.append(
+            {
+                "name": spec["name"],
+                "filename": spec["filename"],
+                "description": spec["description"],
+                "partition_layout": {
+                    "start_addr": f"0x{spec['start_addr']:08X}",
+                    "end_addr": f"0x{spec['end_addr']:08X}",
+                    "start_addr_dec": spec["start_addr"],
+                    "end_addr_dec": spec["end_addr"],
+                    "max_size_bytes": spec["max_bytes"],
+                    "max_size_kb": spec["max_bytes"] // 1024,
+                    "sector_start": part_sec_start,
+                    "sector_end": part_sec_end,
+                    "sector_count": part_sec_count,
+                },
+                "image": {
+                    "size_bytes": size_bytes,
+                    "aligned_size_bytes": aligned_size,
+                    "usage_percent": round((size_bytes * 100.0) / spec["max_bytes"], 2),
+                    "start_addr": f"0x{spec['start_addr']:08X}",
+                    "end_addr": f"0x{img_end_addr:08X}",
+                    "aligned_end_addr": f"0x{img_aligned_end_addr:08X}",
+                    "sector_start": img_sec_start,
+                    "sector_end": img_sec_end,
+                    "sector_count": img_sec_count,
+                    "crc32": f"0x{crc32_val:08X}",
+                    "sha256": sha256_str,
+                },
+                "sectors": sectors_list,
+            }
+        )
+
+    manifest = {
+        "project": "AeroDENS",
+        "target_mcu": "GD32H759IMK6",
+        "board": "GD32H759I-EVAL",
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "flash_geometry": {
+            "base_addr": f"0x{FLASH_BASE_ADDR:08X}",
+            "end_addr": f"0x{FLASH_END_ADDR:08X}",
+            "base_addr_dec": FLASH_BASE_ADDR,
+            "end_addr_dec": FLASH_END_ADDR,
+            "total_size_bytes": FLASH_TOTAL_BYTES,
+            "total_size_kb": FLASH_TOTAL_BYTES // 1024,
+            "sector_size_bytes": SECTOR_SIZE,
+            "total_sectors": TOTAL_SECTORS,
+            "sector_start": 0,
+            "sector_end": TOTAL_SECTORS - 1,
+        },
+        "partitions": partitions_info,
+    }
+
+    out_json_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return manifest
+
+
+def update_flashinfo_txt(manifest: dict, txt_path: Path) -> None:
+    parts = {p["name"]: p for p in manifest["partitions"]}
+    bl = parts["bootloader"]
+    os_p = parts["os"]
+    lg = parts["logo"]
+    an = parts["anim"]
+
+    content = f"""================================================================================
+                    PROJECT AERODENS - FLASH & MEMORY MAP
+               Target Board: GigaDevice GD32H759I-EVAL (GD32H759IMK6)
+               CPU: ARM Cortex-M7 @ 600 MHz | Internal Flash: 3,840 KB
+================================================================================
+
+1. INTERNAL FLASH PARTITION LAYOUT (0x08000000 - 0x083BFFFF, 4 KB Sector Size)
+--------------------------------------------------------------------------------
+Partition    Start Addr   End Addr     Size (KB)   Sectors     Description
+--------------------------------------------------------------------------------
+bootloader   0x08000000   0x0800FFFF       64 KB     0 -  15   Stage-1 Bootloader Partition (bootloader.bin)
+os (app)     0x08010000   0x0817FFFF    1,472 KB    16 - 383   Main OS Partition (os.bin, VTOR = 0x08010000)
+logo.bin     0x08180000   0x081FFFFF      512 KB   384 - 511   Static Image Container Partition (RLE565)
+anim.bin     0x08200000   0x083BFFFF    1,792 KB   512 - 959   Boot Animation Partition (Delta-RLE565)
+--------------------------------------------------------------------------------
+TOTAL        0x08000000   0x083BFFFF    3,840 KB     0 - 959   960 Sectors (4,096 B each)
+
+
+2. EXACT IMAGE SECTOR & CHECKSUM TABLE (From build/flashinfo.json)
+--------------------------------------------------------------------------------
+Image            Start Addr   Aligned End  Used Sectors   Size (Bytes)   CRC32
+--------------------------------------------------------------------------------
+bootloader.bin   {bl['image']['start_addr']}   {bl['image']['aligned_end_addr']}   {bl['image']['sector_start']:>3} - {bl['image']['sector_end']:>3} ({bl['image']['sector_count']:>3})   {bl['image']['size_bytes']:>12,}   {bl['image']['crc32']}
+os.bin           {os_p['image']['start_addr']}   {os_p['image']['aligned_end_addr']}   {os_p['image']['sector_start']:>3} - {os_p['image']['sector_end']:>3} ({os_p['image']['sector_count']:>3})   {os_p['image']['size_bytes']:>12,}   {os_p['image']['crc32']}
+logo.bin         {lg['image']['start_addr']}   {lg['image']['aligned_end_addr']}   {lg['image']['sector_start']:>3} - {lg['image']['sector_end']:>3} ({lg['image']['sector_count']:>3})   {lg['image']['size_bytes']:>12,}   {lg['image']['crc32']}
+anim.bin         {an['image']['start_addr']}   {an['image']['aligned_end_addr']}   {an['image']['sector_start']:>3} - {an['image']['sector_end']:>3} ({an['image']['sector_count']:>3})   {an['image']['size_bytes']:>12,}   {an['image']['crc32']}
+
+
+3. LOGO.BIN INTERNAL OFFSET TABLE (Base Flash Address: 0x08180000)
+--------------------------------------------------------------------------------
+ID   Name     Source File              Offset       Abs Flash Addr   Size (Bytes)   Format
+--------------------------------------------------------------------------------
+--   HEADER   LOGO Container Dir       0x00000000   0x08180000       4,096 (padded) HEADER
+ 0   boot     assets/logo/boot.png     0x00001000   0x08181000       15,252         RLE565
+ 1   error    assets/logo/error.png    0x00005000   0x08185000       7,528          RLE565
+
+
+4. RAM & EXTERNAL MEMORY MAP
+--------------------------------------------------------------------------------
+Region            Start Addr   Size        Section Name          Notes
+--------------------------------------------------------------------------------
+ITCM RAM          0x00000000   64 KB       .itcm                 Zero-wait-state instruction RAM
+DTCM RAM          0x20000000   128 KB      .dtcm                 Zero-wait-state data/ISR stack
+AXI SRAM          0x24000000   512 KB      .display_fb, .data    TLI 480x272 RGB565 FB (255 KB)
+EXMC SDRAM        0xC0000000   32 MB       .sdram (NOLOAD)       External synchronous DRAM
+OSPI NOR Flash    0x90000000   64 MB       GD25X512ME            Onboard Octal-SPI Flash
+
+
+5. BUILD & PACKAGING COMMANDS
+--------------------------------------------------------------------------------
+- Build All Partitions, Generate flashinfo.json & Package build/aerodens_firmware.tar:
+    ./build-all
+
+- Build & Flash Bootloader (0x08000000):
+    pio run -e bootloader -t upload
+
+- Build & Flash OS / App Partition (0x08010000):
+    pio run -e os -t upload
+
+- Flash logo.bin Partition (0x08180000):
+    pio run -e bootloader -t upload_logo
+
+- Flash anim.bin Partition (0x08200000):
+    pio run -e bootloader -t upload_anim
+================================================================================
+"""
+    txt_path.write_text(content, encoding="utf-8")
+
+
+def package_firmware_tar(tar_path: Path, files_to_pack: list[Path]) -> None:
+    with tarfile.open(tar_path, "w") as tar:
+        for fpath in files_to_pack:
+            tar.add(str(fpath), arcname=fpath.name)
+
+
+def main() -> int:
+    BUILD_DIR.mkdir(parents=True, exist_ok=True)
+
+    env = os.environ.copy()
+    env.setdefault("PLATFORMIO_CORE_DIR", str(PROJECT_ROOT / ".pio" / "core"))
+
+    # 1. Build Asset Containers & UI Icons
+    run_step("1/5 Generating logo.bin & include/bootloader/logo_offsets.h", [sys.executable, "tools/mk_logo_bin.py"], env)
+    run_step("2/5 Generating anim.bin & include/bootloader/anim_offsets.h", [sys.executable, "tools/mk_anim_bin.py"], env)
+    run_step("3/5 Generating LVGL C Icon Descriptors in src/os/ui/icons/", [sys.executable, "tools/mk_icon_c.py"], env)
+
+    # 2. Build Bootloader & OS Firmware Binaries
+    run_step("4/5 Building [env:bootloader] and [env:os] via PlatformIO", ["pio", "run", "-e", "bootloader", "-e", "os"], env)
+
+    bl_src = PROJECT_ROOT / ".pio" / "build" / "bootloader" / "firmware.bin"
+    os_src = PROJECT_ROOT / ".pio" / "build" / "os" / "firmware.bin"
+    bl_dst = BUILD_DIR / "bootloader.bin"
+    os_dst = BUILD_DIR / "os.bin"
+
+    shutil.copy2(bl_src, bl_dst)
+    shutil.copy2(os_src, os_dst)
+
+    # 3. Generate flashinfo.json and update flashinfo.txt
+    print("\n==> 5/5 Generating build/flashinfo.json, updating flashinfo.txt, and packaging build/aerodens_firmware.tar")
+    flashinfo_json_path = BUILD_DIR / "flashinfo.json"
+    flashinfo_txt_path = PROJECT_ROOT / "flashinfo.txt"
+    manifest = generate_flashinfo_json(flashinfo_json_path)
+    update_flashinfo_txt(manifest, flashinfo_txt_path)
+    shutil.copy2(flashinfo_txt_path, BUILD_DIR / "flashinfo.txt")
+
+    # 4. Package into build/aerodens_firmware.tar
+    tar_path = BUILD_DIR / "aerodens_firmware.tar"
+    files_to_pack = [
+        BUILD_DIR / "bootloader.bin",
+        BUILD_DIR / "os.bin",
+        BUILD_DIR / "logo.bin",
+        BUILD_DIR / "anim.bin",
+        flashinfo_json_path,
+        BUILD_DIR / "flashinfo.txt",
+    ]
+    package_firmware_tar(tar_path, files_to_pack)
+
+    print("=" * 88)
+    print(f" AeroDENS Firmware Package Ready: {tar_path} ({tar_path.stat().st_size:,} bytes)")
+    print(f" Flash Manifest JSON            : {flashinfo_json_path}")
+    print("-" * 88)
+    for p in manifest["partitions"]:
+        img = p["image"]
+        lay = p["partition_layout"]
+        print(
+            f"  - {p['filename']:<15} : {img['start_addr']} .. {img['aligned_end_addr']} | "
+            f"Sectors {img['sector_start']:>3}..{img['sector_end']:<3} "
+            f"(alloc {lay['sector_start']:>3}..{lay['sector_end']:<3}) | "
+            f"{img['size_bytes']:>9,} B | CRC32 {img['crc32']}"
+        )
+    print("=" * 88)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+

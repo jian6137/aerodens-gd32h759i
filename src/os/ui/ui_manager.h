@@ -1,0 +1,45 @@
+/*!
+    \file    src/os/ui/ui_manager.h
+    \brief   AeroDENS Screen Router & Application Lifecycle Manager
+*/
+
+#ifndef UI_MANAGER_H
+#define UI_MANAGER_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "lvgl.h"
+#include "flight_store.h"
+
+typedef enum {
+    SCREEN_SETUP_RTCLOCK = 0,
+    SCREEN_HOME = 1,
+    SCREEN_NEW_FLIGHT = 2,
+    SCREEN_CONFIRM_FLIGHT = 3,
+    SCREEN_CONNECT = 4,
+    SCREEN_DASHBOARD = 5
+} screen_id_t;
+
+/* Initialize UI Manager, Material 3 Theme, and launch the home screen */
+void ui_manager_init(void);
+
+/* Navigate between screens with smooth Material 3 slide transitions */
+void ui_manager_navigate_to(screen_id_t screen_id, lv_scr_load_anim_t anim_type);
+
+/* Set the currently active flight session */
+void ui_manager_set_active_flight(const flight_record_t *flight);
+
+/* Get the currently active flight session */
+flight_record_t *ui_manager_get_active_flight(void);
+
+/* Periodic ticker update (called by LVGL loop to update live clock, etc.) */
+void ui_manager_update(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* UI_MANAGER_H */
+
