@@ -309,7 +309,7 @@ lv_obj_t *screen_dashboard_create(void)
     const char *ac_type_str = (f != NULL && f->aircraft_type[0] != '\0') ? f->aircraft_type : "A320neo";
     bool is_a330 = (strstr(ac_type_str, "330") != NULL);
 
-    char route_title[32];
+    char route_title[48];
     if (f != NULL && f->origin[0] != '\0' && f->dest[0] != '\0') {
         snprintf(route_title, sizeof(route_title), "%s -> %s", f->origin, f->dest);
     } else {
@@ -453,12 +453,14 @@ lv_obj_t *screen_dashboard_create(void)
     lv_obj_align(s_sheet_chevron, LV_ALIGN_TOP_RIGHT, -20, 20);
 
     lv_obj_t *sheet_body = lv_obj_create(s_bottom_sheet);
-    lv_obj_set_size(sheet_body, 480, 220);
+    lv_obj_set_size(sheet_body, 480, 190);
     lv_obj_set_pos(sheet_body, 0, 44);
     lv_obj_set_style_bg_opa(sheet_body, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(sheet_body, 0, 0);
     lv_obj_set_style_pad_hor(sheet_body, 16, 0);
-    lv_obj_set_style_pad_ver(sheet_body, 4, 0);
+    lv_obj_set_style_pad_top(sheet_body, 4, 0);
+    lv_obj_set_style_pad_bottom(sheet_body, 28, 0);
+    lv_obj_set_scroll_dir(sheet_body, LV_DIR_VER);
 
     lv_obj_t *saf_card = lv_obj_create(sheet_body);
     lv_obj_add_style(saf_card, ui_style_card(), 0);
