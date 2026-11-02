@@ -10,7 +10,7 @@ import sys
 from PIL import Image, ImageDraw, ImageFilter
 
 
-def write_c_array(out_c_path: str, out_h_path: str, var_name: str, width: int, height: int, pixels):
+def write_c_array(out_c_path: str, out_h_path: str, var_name: str, width: int, height: int, pixels, has_alpha: bool = True):
     map_name = f"{var_name}_map"
     header_guard = f"{var_name.upper()}_H"
 
@@ -29,6 +29,9 @@ def write_c_array(out_c_path: str, out_h_path: str, var_name: str, width: int, h
                 f'#endif /* {header_guard} */\n')
 
     # C Source
+    bytes_per_pixel = 3 if has_alpha else 2
+    cf_type = "LV_IMG_CF_TRUE_COLOR_ALPHA" if has_alpha else "LV_IMG_CF_TRUE_COLOR"
+
     with open(out_c_path, "w", encoding="utf-8") as f:
         f.write(f'/*!\n'
                 f'    \\file    {os.path.basename(out_c_path)}\n'
@@ -40,10 +43,11 @@ def write_c_array(out_c_path: str, out_h_path: str, var_name: str, width: int, h
                 f'#endif\n\n'
                 f'const LV_ATTRIBUTE_MEM_ALIGN uint8_t {map_name}[] = {{\n')
 
-        for y in range(height):
-            f.write("    ")
-            for x in range(width):
-                r, g, b, a = pixels[y * width + x]
+        line_count = 0
+        f.write("    ")
+        for p in pixels:
+            if has_alpha:
+                r, g, b, a = p
                 if a == 0:
                     c_low, c_high, alpha = 0, 0, 0
                 else:
@@ -55,19 +59,33 @@ def write_c_array(out_c_path: str, out_h_path: str, var_name: str, width: int, h
                     c_high = (rgb565 >> 8) & 0xFF
                     alpha = a
                 f.write(f"0x{c_low:02X}, 0x{c_high:02X}, 0x{alpha:02X}, ")
-            f.write("\n")
+            else:
+                r, g, b = p[:3]
+                r5 = (r >> 3) & 0x1F
+                g6 = (g >> 2) & 0x3F
+                b5 = (b >> 3) & 0x1F
+                rgb565 = (r5 << 11) | (g6 << 5) | b5
+                c_low = rgb565 & 0xFF
+                c_high = (rgb565 >> 8) & 0xFF
+                f.write(f"0x{c_low:02X}, 0x{c_high:02X}, ")
+
+            line_count += 1
+            if line_count >= 16:
+                f.write("\n    ")
+                line_count = 0
+        f.write("\n")
 
         f.write('};\n\n'
                 f'const lv_img_dsc_t {var_name} = {{\n'
                 f'    .header.always_zero = 0,\n'
                 f'    .header.w = {width},\n'
                 f'    .header.h = {height},\n'
-                f'    .data_size = {width * height * 3},\n'
-                f'    .header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA,\n'
+                f'    .data_size = {width * height * bytes_per_pixel},\n'
+                f'    .header.cf = {cf_type},\n'
                 f'    .data = {map_name},\n'
                 f'}};\n')
 
-    print(f"[mk_icon_c] Generated {out_c_path} ({width}x{height}, {width * height * 3} bytes)")
+    print(f"[mk_icon_c] Generated {out_c_path} ({width}x{height}, {width * height * bytes_per_pixel} bytes)")
 
 
 def generate_os_icon(project_dir: str):
@@ -173,6 +191,20 @@ def generate_flight_separator(project_dir: str):
     write_c_array(out_c_path, out_h_path, "img_ic_flight_separator", w, h, pixels)
 
 
+def generate_wallpaper(project_dir: str):
+    png_path = os.path.join(project_dir, "assets", "icons", "wallpaper.png")
+    out_c_path = os.path.join(project_dir, "src", "os", "ui", "icons", "img_wallpaper.c")
+    out_h_path = os.path.join(project_dir, "src", "os", "ui", "icons", "img_wallpaper.h")
+
+    if not os.path.isfile(png_path):
+        return
+
+    img = Image.open(png_path).convert("RGB")
+    w, h = img.size
+    pixels = list(img.getdata())
+    write_c_array(out_c_path, out_h_path, "img_wallpaper", w, h, pixels, has_alpha=False)
+
+
 def generate_all(project_dir: str):
     icons_dir = os.path.join(project_dir, "src", "os", "ui", "icons")
     os.makedirs(icons_dir, exist_ok=True)
@@ -218,6 +250,9 @@ def generate_all(project_dir: str):
 
     # 6. Flight Route Separator SVG (238x24)
     generate_flight_separator(project_dir)
+
+    # 7. Fullscreen Wallpaper (480x272 RGB565)
+    generate_wallpaper(project_dir)
 
 
 if __name__ == "__main__":

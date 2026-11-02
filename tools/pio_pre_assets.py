@@ -68,6 +68,8 @@ icon_a330_path = join(project_dir, "assets", "icons", "a330.svg")
 icon_a330_c_path = join(icons_out_dir, "img_ac_a330.c")
 icon_sep_path = join(project_dir, "assets", "icons", "ic_flight_separator.svg")
 icon_sep_c_path = join(icons_out_dir, "img_ic_flight_separator.c")
+icon_wp_path = join(project_dir, "assets", "icons", "wallpaper.png")
+icon_wp_c_path = join(icons_out_dir, "img_wallpaper.c")
 
 rebuild_icons = False
 if os.path.isfile(icon_svg_path) and (not os.path.isfile(icon_c_path) or os.path.getmtime(icon_svg_path) > os.path.getmtime(icon_c_path)):
@@ -82,6 +84,8 @@ if os.path.isfile(icon_a330_path) and (not os.path.isfile(icon_a330_c_path) or o
     rebuild_icons = True
 if os.path.isfile(icon_sep_path) and (not os.path.isfile(icon_sep_c_path) or os.path.getmtime(icon_sep_path) > os.path.getmtime(icon_sep_c_path)):
     rebuild_icons = True
+if os.path.isfile(icon_wp_path) and (not os.path.isfile(icon_wp_c_path) or os.path.getmtime(icon_wp_path) > os.path.getmtime(icon_wp_c_path)):
+    rebuild_icons = True
 if os.path.getmtime(mk_icon_script) > os.path.getmtime(icon_c_path) if os.path.isfile(icon_c_path) else True:
     rebuild_icons = True
 
@@ -91,6 +95,8 @@ if rebuild_icons:
 # 4. Ensure nested build directories are pre-created to avoid SCons parallel build race condition
 build_dir = env.subst("$BUILD_DIR")
 os.makedirs(build_dir, exist_ok=True)
+os.makedirs(join(build_dir, "FrameworkCMSIS", "GCC"), exist_ok=True)
+os.makedirs(join(build_dir, "FrameworkSPL"), exist_ok=True)
 src_dir = join(project_dir, "src")
 if os.path.isdir(src_dir):
     for root, dirs, _ in os.walk(src_dir):
