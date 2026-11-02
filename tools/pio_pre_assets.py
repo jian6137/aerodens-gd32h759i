@@ -70,6 +70,8 @@ icon_sep_path = join(project_dir, "assets", "icons", "ic_flight_separator.svg")
 icon_sep_c_path = join(icons_out_dir, "img_ic_flight_separator.c")
 icon_wp_path = join(project_dir, "assets", "icons", "wallpaper.png")
 icon_wp_c_path = join(icons_out_dir, "img_wallpaper.c")
+icon_conn_path = join(project_dir, "assets", "icons", "ic_connect.svg")
+icon_conn_c_path = join(icons_out_dir, "img_ic_connect.c")
 
 rebuild_icons = False
 if os.path.isfile(icon_svg_path) and (not os.path.isfile(icon_c_path) or os.path.getmtime(icon_svg_path) > os.path.getmtime(icon_c_path)):
@@ -85,6 +87,8 @@ if os.path.isfile(icon_a330_path) and (not os.path.isfile(icon_a330_c_path) or o
 if os.path.isfile(icon_sep_path) and (not os.path.isfile(icon_sep_c_path) or os.path.getmtime(icon_sep_path) > os.path.getmtime(icon_sep_c_path)):
     rebuild_icons = True
 if os.path.isfile(icon_wp_path) and (not os.path.isfile(icon_wp_c_path) or os.path.getmtime(icon_wp_path) > os.path.getmtime(icon_wp_c_path)):
+    rebuild_icons = True
+if os.path.isfile(icon_conn_path) and (not os.path.isfile(icon_conn_c_path) or os.path.getmtime(icon_conn_path) > os.path.getmtime(icon_conn_c_path)):
     rebuild_icons = True
 if os.path.getmtime(mk_icon_script) > os.path.getmtime(icon_c_path) if os.path.isfile(icon_c_path) else True:
     rebuild_icons = True

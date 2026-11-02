@@ -191,6 +191,31 @@ def generate_flight_separator(project_dir: str):
     write_c_array(out_c_path, out_h_path, "img_ic_flight_separator", w, h, pixels)
 
 
+def generate_connect_icon(project_dir: str):
+    svg_path = os.path.join(project_dir, "assets", "icons", "ic_connect.svg")
+    out_c_path = os.path.join(project_dir, "src", "os", "ui", "icons", "img_ic_connect.c")
+    out_h_path = os.path.join(project_dir, "src", "os", "ui", "icons", "img_ic_connect.h")
+    tmp_png = "/tmp/ic_connect_tmp.png"
+
+    if not os.path.isfile(svg_path):
+        return
+
+    cmd = [
+        "magick", "-background", "none", "-density", "300",
+        svg_path, "-resize", "48x48", tmp_png
+    ]
+    try:
+        subprocess.run(cmd, check=True)
+    except FileNotFoundError:
+        cmd[0] = "convert"
+        subprocess.run(cmd, check=True)
+
+    img = Image.open(tmp_png).convert("RGBA")
+    w, h = img.size
+    pixels = list(img.getdata())
+    write_c_array(out_c_path, out_h_path, "img_ic_connect", w, h, pixels)
+
+
 def generate_wallpaper(project_dir: str):
     png_path = os.path.join(project_dir, "assets", "icons", "wallpaper.png")
     out_c_path = os.path.join(project_dir, "src", "os", "ui", "icons", "img_wallpaper.c")
@@ -253,6 +278,9 @@ def generate_all(project_dir: str):
 
     # 7. Fullscreen Wallpaper (480x272 RGB565)
     generate_wallpaper(project_dir)
+
+    # 8. Hardware Setup Connect Icon (48x48 RGBA)
+    generate_connect_icon(project_dir)
 
 
 if __name__ == "__main__":
