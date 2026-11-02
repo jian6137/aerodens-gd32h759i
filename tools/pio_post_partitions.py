@@ -26,20 +26,26 @@ if ldscript:
     if isfile(proj_ld):
         env.Replace(LDSCRIPT_PATH=proj_ld)
 
-# 2. Honor board_upload.offset_address (e.g. 0x08010000 for [env:os])
+# 2. Point OpenOCD to project-tracked gd32h7x.cfg and honor board_upload.offset_address
+proj_openocd_cfg = join(project_dir, "tools", "openocd", "gd32h7x.cfg")
 offset_addr = board.get("upload.offset_address", "0x08000000")
-if offset_addr and offset_addr != "0x08000000":
-    flags = env.get("UPLOADERFLAGS", [])
-    updated_flags = [
-        f.replace("0x08000000", str(offset_addr)) if isinstance(f, str) else f
-        for f in flags
-    ]
-    env.Replace(UPLOADERFLAGS=updated_flags)
+
+flags = env.get("UPLOADERFLAGS", [])
+updated_flags = []
+for f in flags:
+    if isinstance(f, str):
+        if isfile(proj_openocd_cfg) and f.endswith("gd32h7x.cfg"):
+            f = proj_openocd_cfg
+        if offset_addr and offset_addr != "0x08000000":
+            f = f.replace("0x08000000", str(offset_addr))
+    updated_flags.append(f)
+env.Replace(UPLOADERFLAGS=updated_flags)
 
 # 3. Register custom partition flash targets (`upload_logo` and `upload_anim`)
 openocd_dir = platform.get_package_dir("tool-openocd") or ""
 openocd_bin = join(openocd_dir, "bin", "openocd") if openocd_dir else "openocd"
 openocd_scripts = join(openocd_dir, "openocd", "scripts") if openocd_dir else ""
+proj_openocd_dir = join(project_dir, "tools", "openocd")
 board_openocd_dir = join(platform.get_dir(), "misc", "openocd")
 
 logo_bin_path = join(project_dir, "build", "logo.bin")
@@ -49,6 +55,7 @@ anim_bin_path = join(project_dir, "build", "anim.bin")
 def make_openocd_flash_cmd(bin_path: str, flash_addr: str) -> str:
     return (
         f'"{openocd_bin}" '
+        f'-s "{proj_openocd_dir}" '
         f'-s "{board_openocd_dir}" '
         + (f'-s "{openocd_scripts}" ' if openocd_scripts else "")
         + "-f interface/cmsis-dap.cfg "
@@ -79,6 +86,7 @@ def make_openocd_erase_cmd(flash_addr: str) -> str:
     )
     return (
         f'"{openocd_bin}" '
+        f'-s "{proj_openocd_dir}" '
         f'-s "{board_openocd_dir}" '
         + (f'-s "{openocd_scripts}" ' if openocd_scripts else "")
         + "-f interface/cmsis-dap.cfg "
