@@ -176,7 +176,7 @@ static void btn_next_cb(lv_event_t *e)
         dt.tz_offset_min = s_tz_list[s_tz_idx].offset_min;
 
         rtc_manager_set_datetime(&dt);
-        ui_manager_navigate_to(SCREEN_HOME, LV_SCR_LOAD_ANIM_FADE_ON);
+        ui_manager_navigate_to(SCREEN_LAUNCHER, LV_SCR_LOAD_ANIM_FADE_IN);
     }
 }
 

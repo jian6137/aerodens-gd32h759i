@@ -6,6 +6,7 @@
 #include "ui_manager.h"
 #include "ui_theme.h"
 #include "ui_topbar.h"
+#include "screen_launcher.h"
 #include "screen_setup_rtclock.h"
 #include "screen_home.h"
 #include "screen_new_flight.h"
@@ -16,7 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static screen_id_t s_curr_screen_id = SCREEN_HOME;
+static screen_id_t s_curr_screen_id = SCREEN_LAUNCHER;
 static flight_record_t s_active_flight;
 static uint32_t s_last_clock_ms = 0U;
 static uint32_t s_last_nav_tick = 0U;
@@ -38,9 +39,12 @@ void ui_manager_init(void)
         lv_scr_load(setup_scr);
         s_curr_screen_id = SCREEN_SETUP_RTCLOCK;
     } else {
-        lv_obj_t *home_scr = screen_home_create();
-        lv_scr_load(home_scr);
-        s_curr_screen_id = SCREEN_HOME;
+        lv_obj_set_style_bg_color(lv_scr_act(), lv_color_black(), 0);
+        lv_obj_set_style_bg_opa(lv_scr_act(), LV_OPA_COVER, 0);
+
+        lv_obj_t *launcher_scr = screen_launcher_create();
+        lv_scr_load_anim(launcher_scr, LV_SCR_LOAD_ANIM_FADE_IN, 500, 50, false);
+        s_curr_screen_id = SCREEN_LAUNCHER;
     }
 }
 
@@ -55,6 +59,9 @@ void ui_manager_navigate_to(screen_id_t screen_id, lv_scr_load_anim_t anim_type)
     lv_obj_t *new_scr = NULL;
 
     switch (screen_id) {
+    case SCREEN_LAUNCHER:
+        new_scr = screen_launcher_create();
+        break;
     case SCREEN_SETUP_RTCLOCK:
         new_scr = screen_setup_rtclock_create();
         break;
@@ -107,6 +114,7 @@ void ui_manager_update(void)
         char clock_buf[48];
         rtc_manager_get_time_str(clock_buf, sizeof(clock_buf));
         ui_topbar_set_clock(clock_buf);
+        screen_launcher_set_clock(clock_buf);
     }
 }
 

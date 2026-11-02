@@ -14,12 +14,13 @@ extern "C" {
 #include "flight_store.h"
 
 typedef enum {
-    SCREEN_SETUP_RTCLOCK = 0,
-    SCREEN_HOME = 1,
-    SCREEN_NEW_FLIGHT = 2,
-    SCREEN_CONFIRM_FLIGHT = 3,
-    SCREEN_CONNECT = 4,
-    SCREEN_DASHBOARD = 5
+    SCREEN_LAUNCHER = 0,
+    SCREEN_SETUP_RTCLOCK = 1,
+    SCREEN_HOME = 2,
+    SCREEN_NEW_FLIGHT = 3,
+    SCREEN_CONFIRM_FLIGHT = 4,
+    SCREEN_CONNECT = 5,
+    SCREEN_DASHBOARD = 6
 } screen_id_t;
 
 /* Initialize UI Manager, Material 3 Theme, and launch the home screen */
