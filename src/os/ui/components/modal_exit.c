@@ -7,6 +7,7 @@
 #include "ui_manager.h"
 #include "ui_theme.h"
 #include "flight_store.h"
+#include "telemetry_manager.h"
 
 static lv_obj_t *s_modal_overlay = NULL;
 
@@ -19,6 +20,7 @@ static void btn_save_exit_cb(lv_event_t *e)
             curr->is_completed = true;
             flight_store_add(curr);
         }
+        telemetry_manager_reset();
         modal_exit_hide();
         ui_manager_navigate_to(SCREEN_HOME, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
     }
@@ -28,6 +30,7 @@ static void btn_exit_no_save_cb(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
+        telemetry_manager_reset();
         modal_exit_hide();
         ui_manager_navigate_to(SCREEN_HOME, LV_SCR_LOAD_ANIM_MOVE_RIGHT);
     }

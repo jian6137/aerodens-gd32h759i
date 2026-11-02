@@ -14,6 +14,7 @@
 #include "screen_connect.h"
 #include "screen_dashboard.h"
 #include "rtc_manager.h"
+#include "telemetry_manager.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -26,6 +27,7 @@ void ui_manager_init(void)
 {
     flight_store_init();
     rtc_manager_init();
+    telemetry_manager_init();
     ui_theme_init();
 
     memset(&s_active_flight, 0, sizeof(s_active_flight));
@@ -105,6 +107,10 @@ flight_record_t *ui_manager_get_active_flight(void)
 
 void ui_manager_update(void)
 {
+    if (telemetry_manager_poll()) {
+        screen_dashboard_refresh();
+    }
+
     uint32_t now = lv_tick_get();
     if ((now - s_last_clock_ms) >= 1000U) {
         s_last_clock_ms = now;
