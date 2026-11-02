@@ -59,16 +59,7 @@ void rt_hw_board_init(void)
 
 void rt_hw_console_output(const char *str)
 {
-    while (*str != '\0') {
-        if (*str == '\n') {
-            usart_data_transmit(EVAL_COM0, (uint8_t)'\r');
-            while (RESET == usart_flag_get(EVAL_COM0, USART_FLAG_TBE)) {
-            }
-        }
-        usart_data_transmit(EVAL_COM0, (uint8_t)(*str++));
-        while (RESET == usart_flag_get(EVAL_COM0, USART_FLAG_TBE)) {
-        }
-    }
+    (void)str;
 }
 
 void rt_hw_us_delay(rt_uint32_t us)

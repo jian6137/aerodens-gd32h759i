@@ -77,26 +77,10 @@ rt_int32_t rt_snprintf(char *buf, rt_size_t size, const char *fmt, ...)
 
 void rt_kprintf(const char *fmt, ...)
 {
-    va_list args;
-    rt_size_t length;
-    static char rt_log_buf[RT_CONSOLEBUF_SIZE];
-
-    va_start(args, fmt);
-    length = rt_vsnprintf(rt_log_buf, sizeof(rt_log_buf) - 1, fmt, args);
-    if (length > RT_CONSOLEBUF_SIZE - 1) {
-        length = RT_CONSOLEBUF_SIZE - 1;
-    }
-    rt_log_buf[length] = '\0';
-    rt_hw_console_output(rt_log_buf);
-    va_end(args);
+    (void)fmt;
 }
 
 void rt_show_version(void)
 {
-    rt_kprintf("\n \\ | /\n");
-    rt_kprintf("- RT -     Thread Operating System (AeroDENS OS @ 0x08010000)\n");
-    rt_kprintf(" / | \\     %d.%d.%d build %s\n",
-               (int)RT_VERSION, (int)RT_SUBVERSION, (int)RT_REVISION, __DATE__);
-    rt_kprintf(" 2006 - 2026 Copyright by rt-thread team\n");
 }
 
