@@ -281,7 +281,8 @@ def main() -> int:
     run_step("3/5 Generating LVGL C Icon Descriptors in src/os/ui/icons/", [sys.executable, "tools/mk_icon_c.py"], env)
 
     # 2. Build Bootloader & OS Firmware Binaries
-    run_step("4/5 Building [env:bootloader] and [env:os] via PlatformIO", ["pio", "run", "-e", "bootloader", "-e", "os"], env)
+    run_step("4a Building [env:bootloader] via PlatformIO", ["pio", "run", "-e", "bootloader"], env)
+    run_step("4b Building [env:os] via PlatformIO", ["pio", "run", "-e", "os"], env)
 
     bl_src = PROJECT_ROOT / ".pio" / "build" / "bootloader" / "firmware.bin"
     os_src = PROJECT_ROOT / ".pio" / "build" / "os" / "firmware.bin"
