@@ -1,5 +1,5 @@
 /*!
-    \file    src/os/ui/screen_dashboard.h
+    \file    src/os/ui/screens/screen_dashboard.h
     \brief   Screen 4: AeroDENS Active Dashboard & Draggable Bottom Sheet
 */
 
@@ -13,10 +13,10 @@ extern "C" {
 #include "lvgl.h"
 
 lv_obj_t *screen_dashboard_create(void);
+void screen_dashboard_refresh(void);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* SCREEN_DASHBOARD_H */
-
