@@ -4,6 +4,7 @@
 */
 
 #include "telemetry_manager.h"
+#include "edge_ai.h"
 #include "gd32h7xx.h"
 #include "gd32h759i_eval.h"
 #include <rtthread.h>
@@ -63,12 +64,14 @@ static void parse_line(const char *line)
     }
 
     if (strcmp(line, "START") == 0 || strstr(line, "START") != NULL) {
+        edge_ai_reset();
         s_telem.is_started = true;
         s_dirty = true;
         return;
     }
 
     if (strcmp(line, "STOP") == 0 || strstr(line, "STOP") != NULL) {
+        edge_ai_reset();
         s_telem.is_started = false;
         s_telem.has_data = false;
         s_dirty = true;
@@ -134,6 +137,7 @@ void telemetry_manager_init(void)
 
 void telemetry_manager_reset(void)
 {
+    edge_ai_reset();
     memset(&s_telem, 0, sizeof(s_telem));
     s_line_len = 0U;
     s_dirty = true;
