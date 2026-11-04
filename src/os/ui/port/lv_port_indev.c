@@ -61,6 +61,7 @@ static void touchpad_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
                         gt911.y[i] = ((uint16_t)touch_buf[4 + i * 8] << 8) + touch_buf[3 + i * 8];
                         gt911.s[i] = ((uint16_t)touch_buf[6 + i * 8] << 8) + touch_buf[5 + i * 8];
                     }
+                    gt911.count = cnt;
 
                     uint16_t x = gt911.x[0];
                     uint16_t y = gt911.y[0];
@@ -90,6 +91,7 @@ static void touchpad_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
                 }
             } else {
                 cand_valid = 0;
+                gt911.count = 0;
             }
 
             if (new_state == LV_INDEV_STATE_REL) {
