@@ -17,6 +17,8 @@ extern "C" {
 /* Airline Icon Image Descriptors */
 extern const lv_img_dsc_t img_ic_airline_5j;
 extern const lv_img_dsc_t img_ic_airline_5j_lg;
+extern const lv_img_dsc_t img_ic_airline_pr;
+extern const lv_img_dsc_t img_ic_airline_pr_lg;
 extern const lv_img_dsc_t img_ic_airline_tg;
 extern const lv_img_dsc_t img_ic_airline_tg_lg;
 extern const lv_img_dsc_t img_ic_flight_separator;
@@ -38,7 +40,7 @@ typedef struct {
 
 static const airline_info_t k_allowed_airlines[AIRLINE_COUNT] = {
     { "5J", "Cebu Pacific",         "CEBU AIR",   &img_ic_airline_5j, &img_ic_airline_5j_lg },
-    { "PR", "Philippine Airlines",  "PHILIPPINE", NULL,               NULL                  },
+    { "PR", "Philippine Airlines",  "PHILIPPINE", &img_ic_airline_pr, &img_ic_airline_pr_lg },
     { "TG", "ThaiAirways",          "THAI",       &img_ic_airline_tg, &img_ic_airline_tg_lg }
 };
 
@@ -98,10 +100,25 @@ static const scheduled_flight_t k_scheduled_flights[] = {
     { AIRLINE_5J, "5J 395", "MNL", "CGY", "7:38 AM", "9:14 AM",  "A320N", 6950U, 65200U },
 
     /* Philippine Airlines */
-    { AIRLINE_PR, "PR 2521", "MNL", "CGY", "6:15 AM", "7:55 AM",  "A321N", 7100U, 66200U },
-    { AIRLINE_PR, "PR 2522", "CGY", "MNL", "8:40 AM", "10:25 AM", "A321N", 7150U, 65800U },
-    { AIRLINE_PR, "PR 2525", "MNL", "CGY", "1:20 PM", "3:00 PM",  "A320-200", 6900U, 63500U },
-    { AIRLINE_PR, "PR 2526", "CGY", "MNL", "3:45 PM", "5:30 PM",  "A320-200", 6950U, 64100U },
+    /* CGY -> MNL */
+    { AIRLINE_PR, "PR 2522", "CGY", "MNL", "8:40 AM",  "10:25 AM", "A321N",    7150U, 65800U },
+    { AIRLINE_PR, "PR 2526", "CGY", "MNL", "5:30 PM",  "7:10 PM",  "A321N",    7150U, 65800U },
+    { AIRLINE_PR, "PR 2534", "CGY", "MNL", "7:35 PM",  "9:05 PM",  "A321N",    7100U, 65200U },
+    { AIRLINE_PR, "PR 2528", "CGY", "MNL", "10:55 PM", "12:35 AM", "A320N",    6850U, 63400U },
+
+    /* MNL -> CGY */
+    { AIRLINE_PR, "PR 2521", "MNL", "CGY", "6:15 AM",  "7:55 AM",  "A321N",    7100U, 66200U },
+    { AIRLINE_PR, "PR 2525", "MNL", "CGY", "2:45 PM",  "4:20 PM",  "A321N",    7100U, 66000U },
+    { AIRLINE_PR, "PR 2533", "MNL", "CGY", "5:10 PM",  "6:45 PM",  "A321N",    7150U, 65600U },
+    { AIRLINE_PR, "PR 2527", "MNL", "CGY", "8:20 PM",  "9:55 PM",  "A320N",    6850U, 63800U },
+
+    /* CGY -> CEB */
+    { AIRLINE_PR, "PR 1296", "CGY", "CEB", "6:30 AM",  "7:17 AM",  "A320N",    3800U, 62000U },
+    { AIRLINE_PR, "PR 2316", "CGY", "CEB", "9:50 PM",  "10:40 PM", "A320-200", 3850U, 62500U },
+
+    /* CEB -> CGY */
+    { AIRLINE_PR, "PR 1295", "CEB", "CGY", "5:00 AM",  "5:50 AM",  "A320N",    3800U, 62000U },
+    { AIRLINE_PR, "PR 2315", "CEB", "CGY", "8:30 PM",  "9:20 PM",  "A320-200", 3850U, 62500U },
 
     /* Thai Airways */
     { AIRLINE_TG, "TG 621", "MNL", "BKK", "1:34 PM", "3:50 PM",  "A330N", 18500U, 142000U },

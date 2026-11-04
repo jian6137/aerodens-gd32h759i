@@ -203,7 +203,7 @@ static void populate_flights_for_airline(int airline_id)
         return;
     }
 
-    char options_buf[640];
+    char options_buf[1280];
     options_buf[0] = '\0';
 
     for (uint32_t i = 0U; i < SCHEDULED_FLIGHT_COUNT; ++i) {

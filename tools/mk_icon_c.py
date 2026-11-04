@@ -259,7 +259,17 @@ def generate_all(project_dir: str):
     out_h_5j_lg = os.path.join(icons_dir, "img_ic_airline_5j_lg.h")
     generate_circle_airline_icon(path_5j, out_c_5j_lg, out_h_5j_lg, "img_ic_airline_5j_lg", 72)
 
-    # 3. Thai Airways Airline Icon (36x36 Small & 72x72 Large Circle)
+    # 3. Philippine Airlines Airline Icon (36x36 Small & 72x72 Large Circle)
+    path_pr = os.path.join(project_dir, "assets", "icons", "PR.png")
+    out_c_pr = os.path.join(icons_dir, "img_ic_airline_pr.c")
+    out_h_pr = os.path.join(icons_dir, "img_ic_airline_pr.h")
+    generate_circle_airline_icon(path_pr, out_c_pr, out_h_pr, "img_ic_airline_pr", 36)
+
+    out_c_pr_lg = os.path.join(icons_dir, "img_ic_airline_pr_lg.c")
+    out_h_pr_lg = os.path.join(icons_dir, "img_ic_airline_pr_lg.h")
+    generate_circle_airline_icon(path_pr, out_c_pr_lg, out_h_pr_lg, "img_ic_airline_pr_lg", 72)
+
+    # 4. Thai Airways Airline Icon (36x36 Small & 72x72 Large Circle)
     path_tg = os.path.join(project_dir, "assets", "icons", "TG.png")
     out_c_tg = os.path.join(icons_dir, "img_ic_airline_tg.c")
     out_h_tg = os.path.join(icons_dir, "img_ic_airline_tg.h")
@@ -269,7 +279,7 @@ def generate_all(project_dir: str):
     out_h_tg_lg = os.path.join(icons_dir, "img_ic_airline_tg_lg.h")
     generate_circle_airline_icon(path_tg, out_c_tg_lg, out_h_tg_lg, "img_ic_airline_tg_lg", 72)
 
-    # 4. A320 Silhouette (120x132, tightly cropped)
+    # 5. A320 Silhouette (120x132, tightly cropped)
     path_a320 = os.path.join(project_dir, "assets", "icons", "a320.svg")
     if not os.path.isfile(path_a320):
         path_a320 = os.path.join(project_dir, "assets", "icons", "A320.svg")

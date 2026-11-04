@@ -60,6 +60,8 @@ else:
 # 3. Check / build UI icons in src/os/ui/icons/
 icon_5j_path = join(project_dir, "assets", "icons", "5J.png")
 icon_5j_c_path = join(icons_out_dir, "img_ic_airline_5j.c")
+icon_pr_path = join(project_dir, "assets", "icons", "PR.png")
+icon_pr_c_path = join(icons_out_dir, "img_ic_airline_pr.c")
 icon_tg_path = join(project_dir, "assets", "icons", "TG.png")
 icon_tg_c_path = join(icons_out_dir, "img_ic_airline_tg.c")
 icon_a320_path = join(project_dir, "assets", "icons", "a320.svg")
@@ -77,6 +79,8 @@ rebuild_icons = False
 if os.path.isfile(icon_svg_path) and (not os.path.isfile(icon_c_path) or os.path.getmtime(icon_svg_path) > os.path.getmtime(icon_c_path)):
     rebuild_icons = True
 if os.path.isfile(icon_5j_path) and (not os.path.isfile(icon_5j_c_path) or os.path.getmtime(icon_5j_path) > os.path.getmtime(icon_5j_c_path)):
+    rebuild_icons = True
+if os.path.isfile(icon_pr_path) and (not os.path.isfile(icon_pr_c_path) or os.path.getmtime(icon_pr_path) > os.path.getmtime(icon_pr_c_path)):
     rebuild_icons = True
 if os.path.isfile(icon_tg_path) and (not os.path.isfile(icon_tg_c_path) or os.path.getmtime(icon_tg_path) > os.path.getmtime(icon_tg_c_path)):
     rebuild_icons = True
