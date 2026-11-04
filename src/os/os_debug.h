@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 void os_debug_start(void);
+void os_debug_run_sd_test(void);
 
 #ifdef __cplusplus
 }

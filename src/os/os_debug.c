@@ -10,6 +10,8 @@
 #include "lcd_console.h"
 #include "systick.h"
 #include "touch/bsp_ts_gt911.h"
+#include "sdcard.h"
+#include "ff.h"
 #include <rtthread.h>
 #include <rthw.h>
 #include <stdio.h>
@@ -157,6 +159,167 @@ static void ui_clear_canvas(void)
     g_canvas_has_ink = 0U;
 }
 
+void os_debug_run_sd_test(void)
+{
+    g_canvas_has_ink = 1U;
+
+    /* Clear canvas area */
+    gd32h759i_lcd_fill_rect(CANVAS_X0, CANVAS_Y0, CANVAS_W, CANVAS_H, UI_CANVAS_BG);
+    draw_rect_outline(CANVAS_X0, CANVAS_Y0, CANVAS_W, CANVAS_H, CONSOLE_COLOR_CYAN);
+
+    uint16_t ty = CANVAS_Y0 + 4U;
+    char buf[44];
+
+    lcd_draw_string_xy(CANVAS_X0 + 8U, ty, "=== SD CARD DIAGNOSTICS ===", CONSOLE_COLOR_YELLOW, UI_CANVAS_BG);
+    ty += 16U;
+
+    rt_kprintf("\r\n================ [SD CARD DIAGNOSTICS] ================\r\n");
+
+    /* 1. Pin Voltage / Pull-up Check */
+    rcu_periph_clock_enable(RCU_GPIOB);
+    rcu_periph_clock_enable(RCU_GPIOC);
+    rcu_periph_clock_enable(RCU_GPIOD);
+
+    uint8_t pb13_val = gpio_input_bit_get(GPIOB, GPIO_PIN_13); /* SDIO0_D0 (JP65) */
+    uint8_t pd2_val  = gpio_input_bit_get(GPIOD, GPIO_PIN_2);  /* SDIO0_CMD */
+    uint8_t pc12_val = gpio_input_bit_get(GPIOC, GPIO_PIN_12); /* SDIO0_CLK */
+    uint8_t pc11_val = gpio_input_bit_get(GPIOC, GPIO_PIN_11); /* SDIO0_D3 (JP52) */
+    uint8_t pc9_val  = gpio_input_bit_get(GPIOC, GPIO_PIN_9);  /* SDIO0_D1 (JP62) */
+
+    rt_snprintf(buf, sizeof(buf), "D0(PB13)=%u CMD(PD2)=%u", (unsigned)pb13_val, (unsigned)pd2_val);
+    lcd_draw_string_xy(CANVAS_X0 + 8U, ty, buf,
+                       (pb13_val && pd2_val) ? CONSOLE_COLOR_GREEN : CONSOLE_COLOR_RED,
+                       UI_CANVAS_BG);
+    ty += 16U;
+
+    rt_snprintf(buf, sizeof(buf), "JP65:D0=%u JP52:D3=%u JP62:D1=%u",
+                (unsigned)pb13_val, (unsigned)pc11_val, (unsigned)pc9_val);
+    lcd_draw_string_xy(CANVAS_X0 + 8U, ty, buf, CONSOLE_COLOR_LIGHTGRAY, UI_CANVAS_BG);
+    ty += 16U;
+
+    rt_kprintf("  Pins: D0[PB13/JP65]=%u CMD[PD2]=%u CLK[PC12]=%u D3[PC11/JP52]=%u D1[PC9/JP62]=%u\r\n",
+               (unsigned)pb13_val, (unsigned)pd2_val, (unsigned)pc12_val, (unsigned)pc11_val, (unsigned)pc9_val);
+
+    if (!pb13_val) {
+        rt_kprintf("  WARNING: PB13 (SDIO0_D0) is LOW! Ensure JP65 is shorting pins 2-3!\r\n");
+    }
+
+    /* 2. Call sd_io_init() */
+    rt_kprintf("  Running sd_io_init()...\r\n");
+    sd_error_enum sd_err = sd_io_init();
+    const char *err_str = sd_error_string(sd_err);
+
+    rt_snprintf(buf, sizeof(buf), "Driver: %s (%d)", err_str, (int)sd_err);
+    lcd_draw_string_xy(CANVAS_X0 + 8U, ty, buf,
+                       (sd_err == SD_OK) ? CONSOLE_COLOR_GREEN : CONSOLE_COLOR_RED,
+                       UI_CANVAS_BG);
+    ty += 16U;
+    rt_kprintf("  sd_io_init() status: %d (%s)\r\n", (int)sd_err, err_str);
+
+    if (sd_err != SD_OK) {
+        if (sd_err == SD_CMD_RESP_TIMEOUT) {
+            lcd_draw_string_xy(CANVAS_X0 + 8U, ty, "ERR: No Card / CMD Timeout", CONSOLE_COLOR_RED, UI_CANVAS_BG);
+            ty += 16U;
+            lcd_draw_string_xy(CANVAS_X0 + 8U, ty, "* JP65 MUST short pins 2-3", CONSOLE_COLOR_YELLOW, UI_CANVAS_BG);
+            ty += 16U;
+            lcd_draw_string_xy(CANVAS_X0 + 8U, ty, "* Keep JP52 on pins 1-2(LCD)", CONSOLE_COLOR_YELLOW, UI_CANVAS_BG);
+            ty += 16U;
+        } else if (sd_err == SD_VOLTRANGE_INVALID) {
+            lcd_draw_string_xy(CANVAS_X0 + 8U, ty, "ERR: Voltage range invalid", CONSOLE_COLOR_RED, UI_CANVAS_BG);
+            ty += 16U;
+        } else {
+            rt_snprintf(buf, sizeof(buf), "ERR Code: 0x%02X", (unsigned int)sd_err);
+            lcd_draw_string_xy(CANVAS_X0 + 8U, ty, buf, CONSOLE_COLOR_RED, UI_CANVAS_BG);
+            ty += 16U;
+        }
+    } else {
+        /* Card initialized successfully */
+        const sd_card_info_struct *info = sd_card_info_get_ptr();
+        uint32_t cap_mb = sd_card_capacity_get() / 1024U;
+
+        rt_snprintf(buf, sizeof(buf), "Card: %lu MB | Blk: %u B",
+                    (unsigned long)cap_mb, (unsigned int)info->card_blocksize);
+        lcd_draw_string_xy(CANVAS_X0 + 8U, ty, buf, CONSOLE_COLOR_WHITE, UI_CANVAS_BG);
+        ty += 16U;
+
+        rt_snprintf(buf, sizeof(buf), "RCA:0x%04X Type:%u",
+                    (unsigned int)info->card_rca, (unsigned int)info->card_type);
+        lcd_draw_string_xy(CANVAS_X0 + 8U, ty, buf, CONSOLE_COLOR_CYAN, UI_CANVAS_BG);
+        ty += 16U;
+
+        rt_kprintf("  Card Info: %lu MB, Block: %u B, RCA: 0x%04X, Type: %u\r\n",
+                   (unsigned long)cap_mb, (unsigned int)info->card_blocksize,
+                   (unsigned int)info->card_rca, (unsigned int)info->card_type);
+
+        /* 3. Raw Sector 0 Read Test */
+        static uint32_t sec_buf[128];
+        sd_error_enum rd_err = sd_block_read(sec_buf, 0U, 512U);
+        uint8_t *b = (uint8_t *)sec_buf;
+        if (rd_err == SD_OK) {
+            uint16_t sig = ((uint16_t)b[511] << 8) | b[510];
+            rt_snprintf(buf, sizeof(buf), "Sec0 Read: OK (Sig: 0x%04X)", sig);
+            lcd_draw_string_xy(CANVAS_X0 + 8U, ty, buf,
+                               (sig == 0xAA55U) ? CONSOLE_COLOR_GREEN : CONSOLE_COLOR_YELLOW,
+                               UI_CANVAS_BG);
+            ty += 16U;
+            rt_kprintf("  Sector 0 Read OK! Signature: 0x%04X\r\n", sig);
+            rt_kprintf("  Sector 0 Bytes: %02X %02X %02X %02X %02X %02X %02X %02X\r\n",
+                       b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+        } else {
+            rt_snprintf(buf, sizeof(buf), "Sec0 Read: ERR (%s)", sd_error_string(rd_err));
+            lcd_draw_string_xy(CANVAS_X0 + 8U, ty, buf, CONSOLE_COLOR_RED, UI_CANVAS_BG);
+            ty += 16U;
+            rt_kprintf("  Sector 0 Read FAILED: %s\r\n", sd_error_string(rd_err));
+        }
+
+        /* 4. FatFs Mount Test ("0:") */
+        static FATFS diag_fs;
+        (void)f_mount(NULL, "0:", 0);
+        FRESULT fr = f_mount(&diag_fs, "0:", 1);
+
+        const char *fr_name = "UNKNOWN";
+        switch (fr) {
+            case FR_OK: fr_name = "FR_OK (Mounted!)"; break;
+            case FR_NO_FILESYSTEM: fr_name = "NO_FS (13: exFAT/FAT32)"; break;
+            case FR_NOT_READY: fr_name = "NOT_READY (3)"; break;
+            case FR_DISK_ERR: fr_name = "DISK_ERR (1)"; break;
+            default: break;
+        }
+
+        rt_snprintf(buf, sizeof(buf), "f_mount: %s", fr_name);
+        lcd_draw_string_xy(CANVAS_X0 + 8U, ty, buf,
+                           (fr == FR_OK) ? CONSOLE_COLOR_GREEN : CONSOLE_COLOR_RED,
+                           UI_CANVAS_BG);
+        ty += 16U;
+        rt_kprintf("  f_mount(\"0:\", 1) = %d (%s), fs_type=%u\r\n",
+                   (int)fr, fr_name, (unsigned int)diag_fs.fs_type);
+
+        if (fr == FR_OK) {
+            DIR dir;
+            FILINFO fno;
+            uint32_t fcount = 0U;
+            if (f_opendir(&dir, "0:/") == FR_OK) {
+                while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0] != '\0' && fcount < 2U) {
+                    rt_snprintf(buf, sizeof(buf), "%s%s",
+                                fno.fname, (fno.fattrib & AM_DIR) ? "/" : "");
+                    lcd_draw_string_xy(CANVAS_X0 + 8U, ty, buf, CONSOLE_COLOR_LIGHTGRAY, UI_CANVAS_BG);
+                    ty += 16U;
+                    rt_kprintf("    * %s (%lu bytes)\r\n", fno.fname, (unsigned long)fno.fsize);
+                    fcount++;
+                }
+                f_closedir(&dir);
+            }
+            if (fcount == 0U) {
+                lcd_draw_string_xy(CANVAS_X0 + 8U, ty, "[Root directory is empty]", CONSOLE_COLOR_GRAY, UI_CANVAS_BG);
+                ty += 16U;
+            }
+        }
+    }
+
+    rt_kprintf("========================================================\r\n\r\n");
+    gd32h759i_lcd_flush();
+}
+
 static void ui_draw_buttons(int active_btn)
 {
     char label[20];
@@ -176,7 +339,7 @@ static void ui_draw_buttons(int active_btn)
             lcd_draw_string_xy((uint16_t)(x0 + 10U), BTN_Y0 + 8U, label, k_brush_colors[g_brush_idx], bg);
             gd32h759i_lcd_fill_rect((uint16_t)(x0 + w - 22U), BTN_Y0 + 8U, 14U, 16U, k_brush_colors[g_brush_idx]);
         } else if (i == 2) {
-            lcd_draw_string_xy((uint16_t)(x0 + 14U), BTN_Y0 + 8U, "IPC BURST", CONSOLE_COLOR_YELLOW, bg);
+            lcd_draw_string_xy((uint16_t)(x0 + 18U), BTN_Y0 + 8U, "SD TEST", CONSOLE_COLOR_YELLOW, bg);
         } else {
             rt_snprintf(label, sizeof(label), "LED:%3ums", (unsigned)k_led_periods[g_led_speed_idx]);
             lcd_draw_string_xy((uint16_t)(x0 + 14U), BTN_Y0 + 8U, label, CONSOLE_COLOR_GREEN, bg);
@@ -204,8 +367,8 @@ static void ui_init_static_frame(void)
     gd32h759i_lcd_fill_rect(236U, 28U, 240U, 20U, UI_PANEL_HEADER);
     draw_rect_outline(236U, 28U, 240U, 204U, UI_BORDER_COLOR);
 
-    ui_clear_canvas();
     ui_draw_buttons(-1);
+    os_debug_run_sd_test();
     gd32h759i_lcd_flush();
 }
 
@@ -271,8 +434,8 @@ static void touch_thread_entry(void *parameter)
                                 g_brush_idx = (uint8_t)((g_brush_idx + 1U) % 6U);
                                 rt_kprintf("[touch] Button: COLOR -> %s\n", k_brush_names[g_brush_idx]);
                             } else if (b == 2) {
-                                rt_sem_release(g_burst_sem);
-                                rt_kprintf("[touch] Button: IPC BURST triggered\n");
+                                os_debug_run_sd_test();
+                                rt_kprintf("[touch] Button: SD TEST triggered\n");
                             } else if (b == 3) {
                                 g_led_speed_idx = (uint8_t)((g_led_speed_idx + 1U) % 3U);
                                 rt_kprintf("[touch] Button: LED SPEED -> %u ms\n",
