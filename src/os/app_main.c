@@ -13,6 +13,7 @@
 #include "lv_port_disp.h"
 #include "lv_port_indev.h"
 #include "ui_manager.h"
+#include "flight_store.h"
 #include <rtthread.h>
 #include <rthw.h>
 #include <stdio.h>
@@ -75,6 +76,23 @@ static void app_led_thread(void *parameter)
     }
 }
 
+static void app_io_worker_thread(void *parameter)
+{
+    (void)parameter;
+
+    /* Allow system boot and initial mounting to settle */
+    rt_thread_mdelay(500);
+
+    while (1) {
+        bool changed = false;
+        bool removed = false;
+        flight_store_poll_sdcard(&changed, &removed);
+
+        /* Poll SD card presence in background every 250ms */
+        rt_thread_mdelay(250);
+    }
+}
+
 void app_main_start(void)
 {
     gd32h759i_lcd_init();
@@ -82,9 +100,11 @@ void app_main_start(void)
 
     rt_thread_t t_gui = rt_thread_create("lvgl", app_lvgl_thread, RT_NULL, 16384, 10, 10);
     rt_thread_t t_led = rt_thread_create("led_hb", app_led_thread, RT_NULL, 1024, 20, 20);
+    rt_thread_t t_io  = rt_thread_create("io_work", app_io_worker_thread, RT_NULL, 4096, 22, 10);
 
     if (t_gui) rt_thread_startup(t_gui);
     if (t_led) rt_thread_startup(t_led);
+    if (t_io)  rt_thread_startup(t_io);
 
     while (1) {
         rt_thread_mdelay(5000);

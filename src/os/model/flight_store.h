@@ -56,6 +56,9 @@ void flight_store_init(void);
 /* Poll SD card presence (detect hot-insertion and hot-removal) */
 void flight_store_poll_sdcard(bool *out_state_changed, bool *out_removed_unexpectedly);
 
+/* Check and clear pending SD card state changes detected by the background IO thread */
+bool flight_store_check_events(bool *out_state_changed, bool *out_removed_unexpectedly);
+
 /* Return true if a valid FAT32 SD card is currently mounted */
 bool flight_store_is_sd_present(void);
 

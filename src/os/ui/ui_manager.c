@@ -24,7 +24,6 @@
 static screen_id_t s_curr_screen_id = SCREEN_LAUNCHER;
 static flight_record_t s_active_flight;
 static uint32_t s_last_clock_ms = 0U;
-static uint32_t s_last_sd_poll_ms = 0U;
 static uint32_t s_last_nav_tick = 0U;
 
 void ui_manager_init(void)
@@ -125,14 +124,10 @@ void ui_manager_update(void)
 
     uint32_t now = lv_tick_get();
 
-    /* Poll SD Card presence / hot-removal every 250 ms */
-    if ((now - s_last_sd_poll_ms) >= 250U) {
-        s_last_sd_poll_ms = now;
-
-        bool sd_changed = false;
-        bool sd_removed = false;
-        flight_store_poll_sdcard(&sd_changed, &sd_removed);
-
+    /* Non-blocking check for SD Card state changes detected by background IO thread */
+    bool sd_changed = false;
+    bool sd_removed = false;
+    if (flight_store_check_events(&sd_changed, &sd_removed)) {
         if (sd_removed &&
             (s_curr_screen_id == SCREEN_DASHBOARD ||
              s_curr_screen_id == SCREEN_CONNECT ||

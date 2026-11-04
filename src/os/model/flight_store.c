@@ -23,6 +23,11 @@ static bool s_sd_io_fault = false;
 static bool s_unmountable_card_present = false;
 static uint32_t s_prng_state = 0x9E3779B9UL;
 
+/* Thread-safe event flags for non-blocking UI consumption */
+static volatile bool s_sd_event_changed = false;
+static volatile bool s_sd_event_removed = false;
+static rt_mutex_t s_fs_mtx = RT_NULL;
+
 static flight_record_t s_flights[FLIGHT_STORE_MAX_FLIGHTS];
 static uint32_t s_flight_count = 0U;
 
@@ -494,10 +499,16 @@ void flight_store_scan_flights(void)
 
 void flight_store_init(void)
 {
+    if (s_fs_mtx == RT_NULL) {
+        s_fs_mtx = rt_mutex_create("fs_mtx", RT_IPC_FLAG_PRIO);
+    }
+
     s_flight_count = 0U;
     s_sd_mounted = false;
     s_sd_io_fault = false;
     s_unmountable_card_present = false;
+    s_sd_event_changed = false;
+    s_sd_event_removed = false;
 
     /* Direct mount attempt on drive "0:" at boot */
     FRESULT mres = f_mount(&s_fs, "0:", 1);
@@ -535,6 +546,15 @@ void flight_store_poll_sdcard(bool *out_state_changed, bool *out_removed_unexpec
             s_flight_count = 0U;
             rt_kprintf("[SD] SD card removed or lost communication\r\n");
 
+            if (s_fs_mtx != RT_NULL) {
+                rt_mutex_take(s_fs_mtx, RT_WAITING_FOREVER);
+            }
+            s_sd_event_changed = true;
+            s_sd_event_removed = true;
+            if (s_fs_mtx != RT_NULL) {
+                rt_mutex_release(s_fs_mtx);
+            }
+
             if (out_state_changed != NULL) {
                 *out_state_changed = true;
             }
@@ -556,6 +576,14 @@ void flight_store_poll_sdcard(bool *out_state_changed, bool *out_removed_unexpec
                 rt_kprintf("[SD] SD card mounted! (fs_type=%u, flights=%lu)\r\n",
                            (unsigned int)s_fs.fs_type, (unsigned long)s_flight_count);
 
+                if (s_fs_mtx != RT_NULL) {
+                    rt_mutex_take(s_fs_mtx, RT_WAITING_FOREVER);
+                }
+                s_sd_event_changed = true;
+                if (s_fs_mtx != RT_NULL) {
+                    rt_mutex_release(s_fs_mtx);
+                }
+
                 if (out_state_changed != NULL) {
                     *out_state_changed = true;
                 }
@@ -567,6 +595,36 @@ void flight_store_poll_sdcard(bool *out_state_changed, bool *out_removed_unexpec
             }
         }
     }
+}
+
+bool flight_store_check_events(bool *out_state_changed, bool *out_removed_unexpectedly)
+{
+    bool had_event = false;
+    bool chg = false;
+    bool rem = false;
+
+    if (s_fs_mtx != RT_NULL) {
+        rt_mutex_take(s_fs_mtx, RT_WAITING_FOREVER);
+    }
+    if (s_sd_event_changed || s_sd_event_removed) {
+        had_event = true;
+        chg = s_sd_event_changed;
+        rem = s_sd_event_removed;
+        s_sd_event_changed = false;
+        s_sd_event_removed = false;
+    }
+    if (s_fs_mtx != RT_NULL) {
+        rt_mutex_release(s_fs_mtx);
+    }
+
+    if (out_state_changed != NULL) {
+        *out_state_changed = chg;
+    }
+    if (out_removed_unexpectedly != NULL) {
+        *out_removed_unexpectedly = rem;
+    }
+
+    return had_event;
 }
 
 bool flight_store_is_sd_present(void)
