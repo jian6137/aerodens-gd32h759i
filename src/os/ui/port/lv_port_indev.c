@@ -10,8 +10,7 @@
 
 #define GT911_MAX_POINT         5U
 #define GT911_BUF_READY         0x80U
-#define GT911_PRESS_TIMEOUT     200U
-#define GT911_DEBOUNCE_DIST     40
+#define GT911_PRESS_TIMEOUT     500U
 
 static lv_indev_drv_t indev_drv;
 lv_indev_t *indev_touchpad = NULL;
@@ -29,10 +28,6 @@ static void touchpad_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
     static lv_coord_t last_y = 0;
     static lv_indev_state_t last_state = LV_INDEV_STATE_REL;
     static uint32_t last_update = 0;
-
-    static uint8_t  cand_valid = 0;
-    static lv_coord_t cand_x = 0;
-    static lv_coord_t cand_y = 0;
 
     if (gt911.enable == 0) {
         data->point.x = last_x;
@@ -52,8 +47,6 @@ static void touchpad_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
                 cnt = GT911_MAX_POINT;
             }
 
-            lv_indev_state_t new_state = LV_INDEV_STATE_REL;
-
             if (cnt > 0U) {
                 if (SUCCESS == gt911_readreg(GT911_COORDINATE_REG, touch_buf, (uint8_t)(8U * cnt))) {
                     for (uint8_t i = 0; i < cnt; i++) {
@@ -67,45 +60,27 @@ static void touchpad_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
                     uint16_t y = gt911.y[0];
 
                     if ((x < 480U) && (y < 272U)) {
-                        gt911.pressed = 2;
-                        if (last_state == LV_INDEV_STATE_PR) {
-                            last_x = (lv_coord_t)x;
-                            last_y = (lv_coord_t)y;
-                            new_state = LV_INDEV_STATE_PR;
-                        }
-                        else if (cand_valid &&
-                                 (LV_ABS((lv_coord_t)x - cand_x) < GT911_DEBOUNCE_DIST) &&
-                                 (LV_ABS((lv_coord_t)y - cand_y) < GT911_DEBOUNCE_DIST)) {
-                            last_x = (lv_coord_t)x;
-                            last_y = (lv_coord_t)y;
-                            new_state = LV_INDEV_STATE_PR;
-                        }
-                        else {
-                            cand_valid = 1;
-                            cand_x = (lv_coord_t)x;
-                            cand_y = (lv_coord_t)y;
-                        }
+                        last_x = (lv_coord_t)x;
+                        last_y = (lv_coord_t)y;
+                        last_state = LV_INDEV_STATE_PR;
+                        gt911.pressed = 1;
                     }
-                } else {
-                    new_state = last_state;
                 }
             } else {
-                cand_valid = 0;
+                last_state = LV_INDEV_STATE_REL;
                 gt911.count = 0;
-            }
-
-            if (new_state == LV_INDEV_STATE_REL) {
                 gt911.pressed = 0;
             }
-            last_state = new_state;
-            last_update = lv_tick_get();
 
+            last_update = lv_tick_get();
             (void)gt911_writereg(GT911_PRESSED_INFO_REG, &clear_flag, 1);
         }
     }
 
     if ((last_state == LV_INDEV_STATE_PR) && (lv_tick_elaps(last_update) > GT911_PRESS_TIMEOUT)) {
         last_state = LV_INDEV_STATE_REL;
+        gt911.pressed = 0;
+        gt911.count = 0;
     }
 
     data->point.x = last_x;

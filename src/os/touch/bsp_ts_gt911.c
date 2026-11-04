@@ -126,8 +126,6 @@ ErrStatus gt911_handler(void)
 
     /* Bit 7 indicates if buffer data is ready */
     if ((touch_buf[0] & 0x80U) == 0U) {
-        gt911.count = 0;
-        gt911.pressed = 0;
         return SUCCESS;
     }
 
