@@ -191,18 +191,18 @@ def generate_flight_separator(project_dir: str):
     write_c_array(out_c_path, out_h_path, "img_ic_flight_separator", w, h, pixels)
 
 
-def generate_connect_icon(project_dir: str):
-    svg_path = os.path.join(project_dir, "assets", "icons", "ic_connect.svg")
-    out_c_path = os.path.join(project_dir, "src", "os", "ui", "icons", "img_ic_connect.c")
-    out_h_path = os.path.join(project_dir, "src", "os", "ui", "icons", "img_ic_connect.h")
-    tmp_png = "/tmp/ic_connect_tmp.png"
+def generate_svg_icon(project_dir: str, svg_name: str, var_name: str, size: int = 48):
+    svg_path = os.path.join(project_dir, "assets", "icons", svg_name)
+    out_c_path = os.path.join(project_dir, "src", "os", "ui", "icons", f"{var_name}.c")
+    out_h_path = os.path.join(project_dir, "src", "os", "ui", "icons", f"{var_name}.h")
+    tmp_png = f"/tmp/{var_name}_tmp.png"
 
     if not os.path.isfile(svg_path):
         return
 
     cmd = [
         "magick", "-background", "none", "-density", "300",
-        svg_path, "-resize", "48x48", tmp_png
+        svg_path, "-resize", f"{size}x{size}", tmp_png
     ]
     try:
         subprocess.run(cmd, check=True)
@@ -213,7 +213,19 @@ def generate_connect_icon(project_dir: str):
     img = Image.open(tmp_png).convert("RGBA")
     w, h = img.size
     pixels = list(img.getdata())
-    write_c_array(out_c_path, out_h_path, "img_ic_connect", w, h, pixels)
+    write_c_array(out_c_path, out_h_path, var_name, w, h, pixels)
+
+
+def generate_connect_icon(project_dir: str):
+    generate_svg_icon(project_dir, "ic_connect.svg", "img_ic_connect", 48)
+
+
+def generate_sdcard_icon(project_dir: str):
+    generate_svg_icon(project_dir, "ic_sdcard.svg", "img_ic_sdcard", 48)
+
+
+def generate_empty_icon(project_dir: str):
+    generate_svg_icon(project_dir, "ic_empty.svg", "img_ic_empty", 48)
 
 
 def generate_wallpaper(project_dir: str):
@@ -281,6 +293,12 @@ def generate_all(project_dir: str):
 
     # 8. Hardware Setup Connect Icon (48x48 RGBA)
     generate_connect_icon(project_dir)
+
+    # 9. SD Card Icon (48x48 RGBA)
+    generate_sdcard_icon(project_dir)
+
+    # 10. Empty Folder / Nothing Here Icon (48x48 RGBA)
+    generate_empty_icon(project_dir)
 
 
 if __name__ == "__main__":
