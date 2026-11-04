@@ -1,6 +1,6 @@
 /*!
     \file    src/os/ui/screen_setup_rtclock.c
-    \brief   AeroDENS 3-Step Material 3 RTC Clock & Calendar Setup Wizard
+    \brief   AeroDENS RTC Clock & Calendar Setup Wizard
              Target: GD32H759I-EVAL (480x272)
 */
 

@@ -275,12 +275,12 @@ def main() -> int:
     env = os.environ.copy()
     env.setdefault("PLATFORMIO_CORE_DIR", str(PROJECT_ROOT / ".pio" / "core"))
 
-    # 1. Build Asset Containers & UI Icons
+    # Build Asset Containers & UI Icons
     run_step("1/5 Generating logo.bin & include/bootloader/logo_offsets.h", [sys.executable, "tools/mk_logo_bin.py"], env)
     run_step("2/5 Generating anim.bin & include/bootloader/anim_offsets.h", [sys.executable, "tools/mk_anim_bin.py"], env)
     run_step("3/5 Generating LVGL C Icon Descriptors in src/os/ui/icons/", [sys.executable, "tools/mk_icon_c.py"], env)
 
-    # 2. Build Bootloader & OS Firmware Binaries
+    # Build Bootloader & OS Firmware Binaries
     run_step("4a Building [env:bootloader] via PlatformIO", ["pio", "run", "-e", "bootloader"], env)
     run_step("4b Building [env:os] via PlatformIO", ["pio", "run", "-e", "os"], env)
 
@@ -292,7 +292,7 @@ def main() -> int:
     shutil.copy2(bl_src, bl_dst)
     shutil.copy2(os_src, os_dst)
 
-    # 3. Generate flashinfo.json and update flashinfo.txt
+    # Generate flashinfo.json and update flashinfo.txt
     print("\n==> 5/5 Generating build/flashinfo.json, updating flashinfo.txt, and packaging build/aerodens_firmware.tar")
     flashinfo_json_path = BUILD_DIR / "flashinfo.json"
     flashinfo_txt_path = PROJECT_ROOT / "flashinfo.txt"
@@ -300,7 +300,7 @@ def main() -> int:
     update_flashinfo_txt(manifest, flashinfo_txt_path)
     shutil.copy2(flashinfo_txt_path, BUILD_DIR / "flashinfo.txt")
 
-    # 4. Package into build/aerodens_firmware.tar
+    # Package into build/aerodens_firmware.tar
     tar_path = BUILD_DIR / "aerodens_firmware.tar"
     files_to_pack = [
         BUILD_DIR / "bootloader.bin",

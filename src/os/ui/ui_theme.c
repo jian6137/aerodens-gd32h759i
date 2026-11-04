@@ -1,6 +1,6 @@
 /*!
     \file    src/os/ui/ui_theme.c
-    \brief   AeroDENS Material 3 Style Definitions & Initialization
+    \brief   AeroDENS Definitions & Initialization
 */
 
 #include "ui_theme.h"

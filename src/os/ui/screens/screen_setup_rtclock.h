@@ -1,6 +1,6 @@
 /*!
     \file    src/os/ui/screen_setup_rtclock.h
-    \brief   AeroDENS Initial Setup Screen for RTC Clock & Calendar (Material 3)
+    \brief   AeroDENS Initial Setup Screen for RTC Clock & Calendar
 */
 
 #ifndef SCREEN_SETUP_RTCLOCK_H

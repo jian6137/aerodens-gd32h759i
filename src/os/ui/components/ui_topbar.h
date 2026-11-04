@@ -1,6 +1,6 @@
 /*!
     \file    src/os/ui/ui_topbar.h
-    \brief   Material 3 Top App Bar with Logo & Clock
+    \brief   Top App Bar with Logo & Clock
 */
 
 #ifndef UI_TOPBAR_H

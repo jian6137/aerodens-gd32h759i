@@ -1,6 +1,6 @@
 /*!
     \file    src/os/ui/ui_topbar.c
-    \brief   Material 3 Top App Bar Implementation
+    \brief   Top App Bar Implementation
 */
 
 #include "ui_topbar.h"

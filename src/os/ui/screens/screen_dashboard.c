@@ -728,7 +728,7 @@ lv_obj_t *screen_dashboard_create(void)
     lv_obj_set_style_text_font(btn_end_lbl, &lv_font_montserrat_12, 0);
     lv_obj_center(btn_end_lbl);
 
-    /* Material 3 Draggable Bottom Sheet */
+    /* Draggable Bottom Sheet */
     s_bottom_sheet = lv_obj_create(s_scr_dashboard);
     lv_obj_add_style(s_bottom_sheet, ui_style_bottom_sheet(), 0);
     lv_obj_set_size(s_bottom_sheet, 480, 280);
@@ -794,7 +794,7 @@ lv_obj_t *screen_dashboard_create(void)
     (void)create_metric_card(sheet_body, 216, "FMS GW VARIANCE", "---", &s_comp_val_lbls[5]);
     (void)create_metric_card(sheet_body, 448, "TARGET REFUEL VOLUME", "---", &s_comp_val_lbls[6]);
 
-    /* Material 3 Horizontal Divider (1px height, subtle gray) */
+    /* Horizontal Divider */
     lv_obj_t *m3_divider = lv_obj_create(sheet_body);
     lv_obj_set_size(m3_divider, 448, 1);
     lv_obj_set_style_bg_color(m3_divider, lv_color_hex(UI_COLOR_HEX_OUTLINE), 0);

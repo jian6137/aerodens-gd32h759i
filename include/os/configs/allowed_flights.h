@@ -1,7 +1,6 @@
 /*!
     \file    include/configs/allowed_flights.h
     \brief   AeroDENS EFB Allowed Airlines, Route Schedules & Aircraft Types
-             Target: GD32H759I-EVAL | Material 3 LVGL EFB
 */
 
 #ifndef AERODENS_ALLOWED_FLIGHTS_H

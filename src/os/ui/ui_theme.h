@@ -1,7 +1,6 @@
 /*!
     \file    src/os/ui/ui_theme.h
-    \brief   AeroDENS Material 3 Theme Palette & Shared Widget Styles
-             Seed Color: #7D001F | Target: GD32H759I-EVAL (480x272)
+    \brief   AeroDENS Theme Palette & Shared Widget Styles
 */
 
 #ifndef UI_THEME_H

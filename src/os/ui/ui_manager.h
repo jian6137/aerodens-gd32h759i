@@ -25,10 +25,10 @@ typedef enum {
     SCREEN_SD_REMOVED = 8
 } screen_id_t;
 
-/* Initialize UI Manager, Material 3 Theme, and launch the home screen */
+/* Initialize UI Manager, and launch the home screen */
 void ui_manager_init(void);
 
-/* Navigate between screens with smooth Material 3 slide transitions */
+/* Navigate between screens */
 void ui_manager_navigate_to(screen_id_t screen_id, lv_scr_load_anim_t anim_type);
 
 /* Set the currently active flight session */

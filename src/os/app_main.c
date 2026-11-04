@@ -1,7 +1,6 @@
 /*!
     \file    src/os/app_main.c
-    \brief   AeroDENS Material 3 LVGL Electronic Flight Bag (EFB) Main Application
-             Target: GD32H759I-EVAL (600MHz ARM Cortex-M7 | 480x272 RGB565)
+    \brief   AeroDENS LVGL Electronic Flight Bag (EFB) Main Application
 */
 
 #include "app_main.h"
