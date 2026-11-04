@@ -146,7 +146,9 @@ void screen_dashboard_refresh(void)
         return;
     }
 
-    const telemetry_data_t *t = telemetry_manager_get();
+    telemetry_data_t t_snap;
+    (void)telemetry_manager_get_snapshot(&t_snap);
+    const telemetry_data_t *t = &t_snap;
 
     if (t->is_started) {
         if (s_waiting_cont != NULL && lv_obj_is_valid(s_waiting_cont)) {

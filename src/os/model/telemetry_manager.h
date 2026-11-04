@@ -31,10 +31,10 @@ void telemetry_manager_init(void);
 void telemetry_manager_reset(void);
 bool telemetry_manager_poll(void);
 const telemetry_data_t *telemetry_manager_get(void);
+bool telemetry_manager_get_snapshot(telemetry_data_t *out_data);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* AERODENS_TELEMETRY_MANAGER_H */
-

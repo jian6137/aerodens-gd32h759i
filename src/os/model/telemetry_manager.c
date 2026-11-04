@@ -22,8 +22,11 @@ static volatile uint16_t s_rx_tail = 0U;
 static char s_line_buf[LINE_BUF_SIZE];
 static uint16_t s_line_len = 0U;
 
-static telemetry_data_t s_telem;
-static bool s_dirty = false;
+/* Double-buffering & mutex for tear-free concurrent telemetry access */
+static telemetry_data_t s_telem_buf[2];
+static volatile uint8_t s_active_idx = 0U;
+static rt_mutex_t s_telem_mtx = RT_NULL;
+static volatile bool s_dirty = false;
 
 void USART0_IRQHandler(void)
 {
@@ -65,20 +68,38 @@ static void parse_line(const char *line)
 
     if (strcmp(line, "START") == 0 || strstr(line, "START") != NULL) {
         edge_ai_reset();
-        s_telem.is_started = true;
+        uint8_t next_idx = (uint8_t)(1U - s_active_idx);
+        s_telem_buf[next_idx] = s_telem_buf[s_active_idx];
+        s_telem_buf[next_idx].is_started = true;
+        if (s_telem_mtx != RT_NULL) {
+            rt_mutex_take(s_telem_mtx, RT_WAITING_FOREVER);
+        }
+        s_active_idx = next_idx;
         s_dirty = true;
+        if (s_telem_mtx != RT_NULL) {
+            rt_mutex_release(s_telem_mtx);
+        }
         return;
     }
 
     if (strcmp(line, "STOP") == 0 || strstr(line, "STOP") != NULL) {
         edge_ai_reset();
-        s_telem.is_started = false;
-        s_telem.has_data = false;
+        uint8_t next_idx = (uint8_t)(1U - s_active_idx);
+        s_telem_buf[next_idx] = s_telem_buf[s_active_idx];
+        s_telem_buf[next_idx].is_started = false;
+        s_telem_buf[next_idx].has_data = false;
+        if (s_telem_mtx != RT_NULL) {
+            rt_mutex_take(s_telem_mtx, RT_WAITING_FOREVER);
+        }
+        s_active_idx = next_idx;
         s_dirty = true;
+        if (s_telem_mtx != RT_NULL) {
+            rt_mutex_release(s_telem_mtx);
+        }
         return;
     }
 
-    if (!s_telem.is_started) {
+    if (!s_telem_buf[s_active_idx].is_started) {
         return;
     }
 
@@ -102,24 +123,39 @@ static void parse_line(const char *line)
                    &left_tank,
                    &right_tank,
                    &total_weight) == 8) {
-            s_telem.alt_ft = (int32_t)alt;
-            s_telem.mach = mach;
-            s_telem.oat_c = oat;
-            s_telem.fuel_temp_c = fuel_temp;
-            s_telem.heading_deg = (int32_t)heading;
-            s_telem.left_tank_kg = left_tank;
-            s_telem.right_tank_kg = right_tank;
-            s_telem.total_weight_kg = total_weight;
-            s_telem.has_data = true;
-            s_telem.packet_count++;
+            uint8_t next_idx = (uint8_t)(1U - s_active_idx);
+            telemetry_data_t *dst = &s_telem_buf[next_idx];
+            *dst = s_telem_buf[s_active_idx];
+            dst->alt_ft = (int32_t)alt;
+            dst->mach = mach;
+            dst->oat_c = oat;
+            dst->fuel_temp_c = fuel_temp;
+            dst->heading_deg = (int32_t)heading;
+            dst->left_tank_kg = left_tank;
+            dst->right_tank_kg = right_tank;
+            dst->total_weight_kg = total_weight;
+            dst->has_data = true;
+            dst->packet_count++;
+
+            if (s_telem_mtx != RT_NULL) {
+                rt_mutex_take(s_telem_mtx, RT_WAITING_FOREVER);
+            }
+            s_active_idx = next_idx;
             s_dirty = true;
+            if (s_telem_mtx != RT_NULL) {
+                rt_mutex_release(s_telem_mtx);
+            }
         }
     }
 }
 
 void telemetry_manager_init(void)
 {
-    memset(&s_telem, 0, sizeof(s_telem));
+    if (s_telem_mtx == RT_NULL) {
+        s_telem_mtx = rt_mutex_create("telem_mtx", RT_IPC_FLAG_PRIO);
+    }
+    memset(s_telem_buf, 0, sizeof(s_telem_buf));
+    s_active_idx = 0U;
     s_rx_head = 0U;
     s_rx_tail = 0U;
     s_line_len = 0U;
@@ -138,9 +174,16 @@ void telemetry_manager_init(void)
 void telemetry_manager_reset(void)
 {
     edge_ai_reset();
-    memset(&s_telem, 0, sizeof(s_telem));
+    if (s_telem_mtx != RT_NULL) {
+        rt_mutex_take(s_telem_mtx, RT_WAITING_FOREVER);
+    }
+    memset(s_telem_buf, 0, sizeof(s_telem_buf));
+    s_active_idx = 0U;
     s_line_len = 0U;
     s_dirty = true;
+    if (s_telem_mtx != RT_NULL) {
+        rt_mutex_release(s_telem_mtx);
+    }
 }
 
 bool telemetry_manager_poll(void)
@@ -173,6 +216,20 @@ bool telemetry_manager_poll(void)
 
 const telemetry_data_t *telemetry_manager_get(void)
 {
-    return &s_telem;
+    return &s_telem_buf[s_active_idx];
 }
 
+bool telemetry_manager_get_snapshot(telemetry_data_t *out_data)
+{
+    if (out_data == NULL) {
+        return false;
+    }
+    if (s_telem_mtx != RT_NULL) {
+        rt_mutex_take(s_telem_mtx, RT_WAITING_FOREVER);
+    }
+    memcpy(out_data, &s_telem_buf[s_active_idx], sizeof(telemetry_data_t));
+    if (s_telem_mtx != RT_NULL) {
+        rt_mutex_release(s_telem_mtx);
+    }
+    return out_data->has_data;
+}
