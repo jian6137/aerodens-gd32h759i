@@ -369,6 +369,9 @@ static void next_btn_event_cb(lv_event_t *e)
 
         flight_record_t rec;
         memset(&rec, 0, sizeof(rec));
+        if (s_selected_airline_id >= 0 && s_selected_airline_id < (int)AIRLINE_COUNT) {
+            strncpy(rec.carrier, k_allowed_airlines[s_selected_airline_id].name, sizeof(rec.carrier) - 1U);
+        }
         strncpy(rec.flight_no, f->flight_no, sizeof(rec.flight_no) - 1U);
         strncpy(rec.origin, f->origin, sizeof(rec.origin) - 1U);
         strncpy(rec.dest, f->dest, sizeof(rec.dest) - 1U);

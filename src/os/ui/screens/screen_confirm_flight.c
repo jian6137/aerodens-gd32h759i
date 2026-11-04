@@ -23,6 +23,10 @@ static void topbar_back_cb(void)
 static void confirm_btn_event_cb(lv_event_t *e)
 {
     if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
+        flight_record_t *f = ui_manager_get_active_flight();
+        if (f != NULL) {
+            (void)flight_store_create_flight(f);
+        }
         ui_manager_navigate_to(SCREEN_CONNECT, LV_SCR_LOAD_ANIM_MOVE_LEFT);
     }
 }

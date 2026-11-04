@@ -224,6 +224,11 @@ void screen_dashboard_refresh(void)
     edge_ai_output_t ai_out;
     edge_ai_compute(&ai_in, &ai_out);
 
+    /* Log live USART telemetry reading & AeroDENS computation to SD Card CSV + flight.inf */
+    if (f != NULL) {
+        (void)flight_store_log_telemetry(f, t, &ai_out);
+    }
+
     char buf[80];
 
     /* Main Flight Screen Updates */

@@ -20,7 +20,9 @@ typedef enum {
     SCREEN_NEW_FLIGHT = 3,
     SCREEN_CONFIRM_FLIGHT = 4,
     SCREEN_CONNECT = 5,
-    SCREEN_DASHBOARD = 6
+    SCREEN_DASHBOARD = 6,
+    SCREEN_FLIGHT_INFO = 7,
+    SCREEN_SD_REMOVED = 8
 } screen_id_t;
 
 /* Initialize UI Manager, Material 3 Theme, and launch the home screen */
@@ -35,7 +37,7 @@ void ui_manager_set_active_flight(const flight_record_t *flight);
 /* Get the currently active flight session */
 flight_record_t *ui_manager_get_active_flight(void);
 
-/* Periodic ticker update (called by LVGL loop to update live clock, etc.) */
+/* Periodic ticker update (called by LVGL loop to update live clock, SD card state, etc.) */
 void ui_manager_update(void);
 
 #ifdef __cplusplus
@@ -43,4 +45,3 @@ void ui_manager_update(void);
 #endif
 
 #endif /* UI_MANAGER_H */
-

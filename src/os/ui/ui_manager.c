@@ -13,6 +13,9 @@
 #include "screen_confirm_flight.h"
 #include "screen_connect.h"
 #include "screen_dashboard.h"
+#include "screen_flight_info.h"
+#include "screen_sd_removed.h"
+#include "modal_exit.h"
 #include "rtc_manager.h"
 #include "telemetry_manager.h"
 #include <stdio.h>
@@ -21,12 +24,13 @@
 static screen_id_t s_curr_screen_id = SCREEN_LAUNCHER;
 static flight_record_t s_active_flight;
 static uint32_t s_last_clock_ms = 0U;
+static uint32_t s_last_sd_poll_ms = 0U;
 static uint32_t s_last_nav_tick = 0U;
 
 void ui_manager_init(void)
 {
-    flight_store_init();
     rtc_manager_init();
+    flight_store_init();
     telemetry_manager_init();
     ui_theme_init();
 
@@ -53,7 +57,9 @@ void ui_manager_init(void)
 void ui_manager_navigate_to(screen_id_t screen_id, lv_scr_load_anim_t anim_type)
 {
     uint32_t now = lv_tick_get();
-    if (s_last_nav_tick != 0U && (now - s_last_nav_tick) < 350U) {
+    /* Allow SCREEN_SD_REMOVED emergency interrupt to bypass navigation debounce */
+    if (screen_id != SCREEN_SD_REMOVED &&
+        s_last_nav_tick != 0U && (now - s_last_nav_tick) < 350U) {
         return;
     }
     s_last_nav_tick = now;
@@ -81,6 +87,12 @@ void ui_manager_navigate_to(screen_id_t screen_id, lv_scr_load_anim_t anim_type)
         break;
     case SCREEN_DASHBOARD:
         new_scr = screen_dashboard_create();
+        break;
+    case SCREEN_FLIGHT_INFO:
+        new_scr = screen_flight_info_create();
+        break;
+    case SCREEN_SD_REMOVED:
+        new_scr = screen_sd_removed_create();
         break;
     default:
         new_scr = screen_home_create();
@@ -112,6 +124,29 @@ void ui_manager_update(void)
     }
 
     uint32_t now = lv_tick_get();
+
+    /* Poll SD Card presence / hot-removal every 250 ms */
+    if ((now - s_last_sd_poll_ms) >= 250U) {
+        s_last_sd_poll_ms = now;
+
+        bool sd_changed = false;
+        bool sd_removed = false;
+        flight_store_poll_sdcard(&sd_changed, &sd_removed);
+
+        if (sd_removed &&
+            (s_curr_screen_id == SCREEN_DASHBOARD ||
+             s_curr_screen_id == SCREEN_CONNECT ||
+             s_curr_screen_id == SCREEN_NEW_FLIGHT ||
+             s_curr_screen_id == SCREEN_CONFIRM_FLIGHT ||
+             s_curr_screen_id == SCREEN_FLIGHT_INFO)) {
+            modal_exit_hide();
+            telemetry_manager_reset();
+            ui_manager_navigate_to(SCREEN_SD_REMOVED, LV_SCR_LOAD_ANIM_FADE_IN);
+        } else if (sd_changed && s_curr_screen_id == SCREEN_HOME) {
+            screen_home_refresh();
+        }
+    }
+
     if ((now - s_last_clock_ms) >= 1000U) {
         s_last_clock_ms = now;
 
@@ -123,4 +158,3 @@ void ui_manager_update(void)
         screen_launcher_set_clock(clock_buf);
     }
 }
-
