@@ -397,6 +397,7 @@ Contributions, feature suggestions, and bug reports are welcome:
 ### Acknowledgments
 This project is made possible thanks to the following open-source frameworks and technologies:
 - [PlatformIO](https://platformio.org/) - Microcontroller compilation and dependency management.
+- [PlatformIO GD32H759 Support Packages](https://github.com/jian6137/platform-gd32h7) - A platformio support package developed by me allowing GD32H759 development boards to have PlatformIO support.
 - [LVGL](https://lvgl.io/) - Light and Versatile Graphics Library for embedded displays.
 - [LVGL Port for GD32H759](https://github.com/GigaDevice-GD32-MCU/GD32H759_EVAL_LVGL) - An LVGL port for the GD32H759 board to fix issues such as random freezing
 - [RT-Thread](https://www.rt-thread.io/) - Real-time operating system kernel and synchronization primitives.
