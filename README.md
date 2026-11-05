@@ -365,15 +365,15 @@ If you encounter issues during hardware setup, board flashing, or live telemetry
 ## ![Disclaimers Header Banner](docs/images/h9.png)
 
 ### Airline Affiliation and Trademarks
-AeroDENS is an independent, non-commercial engineering and research project developed entirely as a solo initiative. It is not affiliated with, sponsored by, endorsed by, or partnered with any commercial airline, aircraft manufacturer, or aerospace corporation. 
+AeroDENS is an independent, non commercial engineering and research project developed entirely as a solo initiative. It is CURRENTLY not affiliated with, sponsored by, endorsed by, or partnered with any commercial airline, aircraft manufacturer, or aerospace corporation. 
 
-All airline names, liveries, emblems, logos, callsigns, and trademarks referenced within this repository and user interface—including Cebu Pacific (5J / CEB), Philippine Airlines (PR / PAL), and Thai Airways (TG / THA)—remain the exclusive intellectual property of their respective trademark holders. Their appearance in this project is strictly for illustrative UI layout demonstration, real-time route parsing, and avionics display testing.
+All airline names, liveries, emblems, logos, callsigns, and trademarks referenced within this repository and user interface,including Cebu Pacific (5J / CEB), Philippine Airlines (PR / PAL), and Thai Airways (TG / THA), remain the exclusive intellectual property of their respective trademark holders. Their appearance in this project is strictly for illustrative UI layout demonstration, realtime route parsing, and avionics display testing.
 
 ### Flight and Navigation Data
 All flight numbers, airport waypoints, origin/destination pairs, coordinates, and scheduled block times utilized in the configuration files are compiled solely from publicly available flight schedules and open aeronautical sources.
 
 ### Operational Certification
-AeroDENS is an experimental avionics prototype built solely for flight simulation and embedded systems research on ARM Cortex-M7 hardware. It is not certified by the FAA, EASA, CAAP, or any other civil aviation authority (no DO-178C or DO-254 compliance). It is not intended for operational navigation, fuel dispatch planning, or flight crew decision-making in real-world aircraft.
+AeroDENS is an experimental avionics prototype built solely for flight simulation and embedded systems research on ARM Cortex-M7 hardware. To bypass the extensive implementation time and rigorous safety certifications required to interface directly with a commercial aircraft's ARINC 429 data bus, the system currently utilizes a USB USART connection for all flight sensor and telemetry data ingestion. Because it lacks DO-178C and DO-254 compliance, the system is not yet certified by the FAA, EASA, CAAP, or any other civil aviation authority. It is strictly not intended for operational navigation, fuel dispatch planning, or flight crew decision-making in realworld aircraft.
 
 ---
 
@@ -382,7 +382,7 @@ AeroDENS is an experimental avionics prototype built solely for flight simulatio
 ## ![License Contributing Header Banner](docs/images/h10.png)
 
 ### License
-AeroDENS is released under the [MIT License](LICENSE). You are free to inspect, modify, adapt, and distribute this software for personal, academic, and research purposes, provided that the original copyright notice and permission notice remain intact.
+AeroDENS is released under the MIT License. You are free to inspect, modify, adapt, and distribute this software for personal, academic, and research purposes, provided that the original copyright notice and permission notice remain intact.
 
 ### Contributing
 Contributions, feature suggestions, and bug reports are welcome:
@@ -398,6 +398,7 @@ Contributions, feature suggestions, and bug reports are welcome:
 This project is made possible thanks to the following open-source frameworks and technologies:
 - [PlatformIO](https://platformio.org/) - Microcontroller compilation and dependency management.
 - [LVGL](https://lvgl.io/) - Light and Versatile Graphics Library for embedded displays.
+- [LVGL Port for GD32H759](https://github.com/GigaDevice-GD32-MCU/GD32H759_EVAL_LVGL) - An LVGL port for the GD32H759 board to fix issues such as random freezing
 - [RT-Thread](https://www.rt-thread.io/) - Real-time operating system kernel and synchronization primitives.
 - [ChaN FatFs](http://elm-chan.org/fsw/ff/00index_e.html) - MicroSD file system module for persistent flight telemetry logging.
 - [GigaDevice](https://www.gd32mcu.com/) - High-performance GD32H759 ARM Cortex-M7 microcontroller platform.
