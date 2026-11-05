@@ -8,13 +8,47 @@ AeroDENS is a standalone embedded avionics advisory and flight telemetry system 
 It runs on a 600 MHz ARM Cortex-M7 microcontroller, providing realtime fuel density correction for Sustainable Aviation Fuel (SAF) blends, dynamic weight and balance calculation, flight crew advisories, and persistent telemetry logging.
 
 ---
-
 <br>
 <br>
 
+![Table of Contents Header Banner](docs/images/h11.png)
+
+- [Why I Built It](#why-i-built-it)
+  - [The Problem](#the-problem)
+  - [The Solution](#the-solution)
+- [Key Features](#key-features)
+- [Getting Started & Installation](#getting-started)
+  - [Part 1: Installation via Flashing](#part-1-installation-via-flashing)
+    - [Requirements Installation](#requirements-installation)
+    - [Using the Graphical Flasher](#using-the-graphical-flasher)
+    - [Using the Command-Line Flasher (CLI)](#using-the-command-line-flasher-cli)
+  - [Part 2: Compiling Source Code and Installation](#part-2-compiling-source-code-and-installation)
+    - [Prerequisites](#prerequisites)
+    - [One Click Build](#one-click-build)
+    - [Manual Build with PlatformIO CLI](#manual-build-with-platformio-cli)
+- [Testing](#testing)
+- [How It Works](#how-it-works)
+- [Tech Stack & Architecture](#tech-stack-and-architecture)
+- [Project Structure](#project-structure)
+- [Troubleshooting](#troubleshooting)
+- [Disclaimers](#disclaimers)
+  - [Airline Affiliation and Trademarks](#airline-affiliation-and-trademarks)
+  - [Flight and Navigation Data](#flight-and-navigation-data)
+  - [Operational Certification](#operational-certification)
+- [License & Contributing](#license-and-contributing)
+  - [License](#license)
+  - [Contributing](#contributing)
+  - [Acknowledgments](#acknowledgments)
+
+---
+
+<br>
+
+<a id="why-i-built-it"></a>
 ![Why I Built It Header Banner](docs/images/h1.png)
 
 
+<a id="the-problem"></a>
 ### The Problem
 Commercial aviation relies on legacy Flight Management Systems (FMS) and Fuel Quantity Management Systems (FQMS) that are strictly calibrated to a standard atmospheric model, specifically assuming a fixed fuel density (approx. 0.803 kg/L for Jet A-1) at exactly 15°C.
 
@@ -30,6 +64,7 @@ Furthermore, as the aviation industry begins transitioning to Sustainable Aviati
 
 <br>
 
+<a id="the-solution"></a>
 ### The Solution
 I built AeroDENS as a dedicated advisory system to bypass legacy FMS limitations directly in the cockpit. By ingesting realtime hardware in the loop telemetry (Outside Air Temperature, fuel temperature, tank volumes, altitude, and Mach speed), alongside the specific SAF blend ratio, AeroDENS calculates the true, temperature adjusted fuel density on the fly.
 
@@ -39,7 +74,8 @@ By actively identifying and shedding "Phantom Weight," AeroDENS establishes the 
 
 <br>
 
-![KEy Features Header Banner](docs/images/h2.png)
+<a id="key-features"></a>
+![Key Features Header Banner](docs/images/h2.png)
 
 
 - **Live SAF Density Correction**: Dynamically adjusts fuel density based on SAF blend percentage (0% to 100%) and outside air temperature variations.
@@ -57,7 +93,8 @@ By actively identifying and shedding "Phantom Weight," AeroDENS establishes the 
 
 <br>
 
-![Getting StartedHeader Banner](docs/images/h3.png)
+<a id="getting-started"></a>
+![Getting Started Header Banner](docs/images/h3.png)
 
 ## Installation
 
@@ -182,6 +219,7 @@ Or via the PlatformIO VSCode Extension:
 
 <br>
 
+<a id="testing"></a>
 ## ![Testing Header Banner](docs/images/h5.png)
 
 To test it, you will need to use a Flight Simulator that supports outputting live flight telemetry and sensor data through some sort of medium.
@@ -235,7 +273,8 @@ Once connected, it will then start to broadcast live telemetry data, including t
 
 <br>
 
- ![How It Works Header Banner](docs/images/h4.png)
+<a id="how-it-works"></a>
+![How It Works Header Banner](docs/images/h4.png)
 
 AeroDENS solves a calibration flaw in legacy flight computers caused by volumetric fuel measurement. Aircraft sensors measure fuel by the space it takes up (volume) rather than its actual physical mass. To calculate weight, standard Flight Management Systems (FMS) on aircrafts such as the Airbus, multiply this volume by a hardcoded density of *0.803 kg/L*, assuming a constant outside temperature of *15°C* and standard *Jet A-1 fuel*. However, jet fuel physically expands in warmer temperatures, and modern Sustainable Aviation Fuel (SAF) has a lighter base weight. The AeroDENS Physics Advisory Engine bypasses this flaw by intercepting live telemetry, such as Outside Air Temperature (OAT) and tank volumes from an input bus, either connected via USB USART from a Flight Simulator, or ARINC 429 bus for actual Airbus Aircrafts. 
 
@@ -292,6 +331,7 @@ This 3.16 emission index is the global standard metric used by aviation authorit
 
 <br>
 
+<a id="tech-stack-and-architecture"></a>
 ## ![Tech Stack & Architecture Header Banner](docs/images/h6.png)
 
 - **Microcontroller**: [GigaDevice GD32H759I](https://www.gd32mcu.com/cn/download?kw=H7&lan=cn) (ARM Cortex-M7 running up to 600 MHz, 3,840 KB internal Flash, 1 MB internal SRAM).
@@ -315,6 +355,7 @@ This 3.16 emission index is the global standard metric used by aviation authorit
 
 <br>
 
+<a id="project-structure"></a>
 ## ![Project Structure Header Banner](docs/images/h7.png)
 
 ```
@@ -354,6 +395,7 @@ AeroDENS/
 
 <br>
 
+<a id="troubleshooting"></a>
 ## ![Troubleshooting Header Banner](docs/images/h8.png)
 
 If you encounter issues during hardware setup, board flashing, or live telemetry streaming, refer to the [Troubleshooting Guide](docs/TROUBLESHOOTING.md). It provides solutions for common hardware and software issues, including evaluation board jumper configurations (such as JP66 display routing and JP52/JP62/JP65 SDIO signals), OpenOCD debugger and CMSIS-DAP connection permissions, MicroSD card formatting and initialization, Goodix GT911 touch sensor calibration, and simulator binder network discovery.
@@ -362,6 +404,7 @@ If you encounter issues during hardware setup, board flashing, or live telemetry
 
 <br>
 
+<a id="disclaimers"></a>
 ## ![Disclaimers Header Banner](docs/images/h9.png)
 
 ### Airline Affiliation and Trademarks
@@ -379,6 +422,7 @@ AeroDENS is an experimental avionics prototype built solely for flight simulatio
 
 <br>
 
+<a id="license-and-contributing"></a>
 ## ![License Contributing Header Banner](docs/images/h10.png)
 
 ### License
