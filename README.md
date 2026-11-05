@@ -295,8 +295,8 @@ This 3.16 emission index is the global standard metric used by aviation authorit
 ## ![Tech Stack & Architecture Header Banner](docs/images/h6.png)
 
 - **Microcontroller**: [GigaDevice GD32H759I](https://www.gd32mcu.com/cn/download?kw=H7&lan=cn) (ARM Cortex-M7 running up to 600 MHz, 3,840 KB internal Flash, 1 MB internal SRAM).
- ![GigaDevice GD32H759I Board](docs/images/gd32h759-evalboard.png)
 
+- ![GigaDevice GD32H759I Board](docs/images/gd32h759-evalboard.png)
 - **Display Subsystem**: 4.3-inch 480x272 RGB LCD driven by the GD32 TFT LCD Interface (TLI) and accelerated via the Image Processing Accelerator (IPA) hardware DMA engine.
 - **Touch Input**: Goodix GT911 5 point capacitive touch panel communicating via software I2C.
 - **Operating System**: [RT-Thread RTOS](https://www.rt-thread.io/download.html?download=RT-Thread) (preemptive multitasking, mutexes, semaphores, and thread management).  
