@@ -685,9 +685,19 @@ def run_gtk_gui():
             logo_card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
             logo_card.get_style_context().add_class("odin-banner-card")
 
+            logo_loaded = False
             if LOGO_SVG.is_file():
                 try:
                     pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(str(LOGO_SVG), 130, -1, True)
+                    logo_img = Gtk.Image.new_from_pixbuf(pb)
+                    logo_card.pack_start(logo_img, False, False, 0)
+                    logo_loaded = True
+                except Exception:
+                    pass
+
+            if not logo_loaded and LOGO_PNG.is_file():
+                try:
+                    pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(str(LOGO_PNG), 130, -1, True)
                     logo_img = Gtk.Image.new_from_pixbuf(pb)
                     logo_card.pack_start(logo_img, False, False, 0)
                 except Exception:

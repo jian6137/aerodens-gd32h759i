@@ -1,0 +1,19 @@
+# AeroDENS Project & Flasher Dependencies
+# Requires Python 3.9 or newer
+
+# Embedded build system and hardware toolchains (includes OpenOCD)
+platformio>=6.1.0
+
+# Asset compilation and image processing for icons, boot animation, and logos
+Pillow>=10.0.0
+
+# Serial communication support for hardware debugging and telemetry monitoring
+pyserial>=3.5
+
+# Note for Linux distributions:
+# The Odin-style GUI flasher uses Python's built-in Tkinter framework.
+# If your Linux package manager splits Tkinter from the base Python package, install it via:
+#   Ubuntu/Debian: sudo apt-get install python3-tk
+#   Fedora/RHEL:   sudo dnf install python3-tkinter
+#   Arch Linux:    sudo pacman -S tk
+

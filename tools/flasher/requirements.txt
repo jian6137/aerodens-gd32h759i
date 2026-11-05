@@ -1,0 +1,19 @@
+# AeroDENS Firmware Flasher Dependencies
+# Requires Python 3.9 or newer
+
+# PlatformIO provides OpenOCD and ARM toolchains used for device communication
+platformio>=6.1.0
+
+# Imaging library for logo and icon asset processing
+Pillow>=10.0.0
+
+# Serial communication support for hardware debugging and telemetry monitoring
+pyserial>=3.5
+
+# Note for Linux distributions:
+# The graphical flasher uses Python's built-in Tkinter interface.
+# If Tkinter is not bundled with your distribution's Python, install it via:
+#   Ubuntu/Debian: sudo apt-get install python3-tk
+#   Fedora/RHEL:   sudo dnf install python3-tkinter
+#   Arch Linux:    sudo pacman -S tk
+
