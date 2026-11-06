@@ -50,25 +50,38 @@ It runs on a 600 MHz ARM Cortex-M7 microcontroller, providing realtime fuel dens
 
 <a id="the-problem"></a>
 ### The Problem
-Commercial aviation relies on legacy Flight Management Systems (FMS) and Fuel Quantity Management Systems (FQMS) that are strictly calibrated to a standard atmospheric model, specifically assuming a fixed fuel density (approx. 0.803 kg/L for Jet A-1) at exactly 15°C.
 
-In real world operations, extreme temperature fluctuations, from a 35°C hot tarmac to a -40°C cruise altitude, cause jet fuel to constantly expand and shrink in volume. Because aircraft fuel probes measure volume and the FMS multiplies this by a fixed, static density, the legacy computers frequently hallucinate what I call the term "Phantom Weight." When hot fuel expands, the FMS overestimates the True Gross Weight, creating a cascade of aerodynamic inefficiencies:
+The aviation industry right now is facing a massive double crisis: incredibly high fuel costs (like the severe [Level 12 and 13 fuel surcharges](https://www.gmanetwork.com/news/money/economy/1000213/airfares-to-go-up-as-fuel-surcharge-upgraded-to-level-13-for-sept-1-15-2026-flights/story/) recently mandated by the Civil Aeronautics Board in the Philippines) and strict global pressure to reach [net zero carbon emissions by 2050](https://www.iata.org/en/programs/sustainability/flynetzero/).
 
-1. The aircraft calculates suboptimal altitude targets, forcing the plane to fly lower in thicker air due to imaginary weight corrections.
+While airlines try to fix this by planning better routes, they are missing a massive, hidden source of wasted fuel and carbon pollution: the outdated way airplanes calculate their own weight.
 
-2. Cruise Mach numbers become inefficient, and the calculated Center of Gravity (% MAC) drifts from physical reality.
+Older flight computers and fuel systems rely on a hardcoded rule. They assume jet fuel always weighs exactly *0.803* kilograms per liter (kg/l), acting as if the weather outside is always a perfect 15°C.
 
-3. Pilots miss critical step climb opportunities, resulting in active fuel waste and unnecessary CO2 emissions.
- 
-Furthermore, as the aviation industry begins transitioning to Sustainable Aviation Fuel (SAF), which possesses a fundamentally lower base density (~0.759 kg/L), this strict FMS calibration flaw will compound, rendering legacy weight calculations increasingly inaccurate.
+In reality, temperatures constantly change. From a 35°C runway to freezing -40°C air up high, jet fuel physically expands and shrinks. Because aircraft sensors only measure how much space the fuel takes up (volume) and multiply it by that hardcoded rigid number, the computer gets tricked. It hallucinates a "Phantom Weight."
+
+When hot fuel expands, the aircraft thinks it is much heavier than it actually is. This imaginary weight forces the plane to fly inefficiently, wasting fuel and increasing emissions in three main ways:
+
+1. The aircraft flies too low in thick, heavy air because it falsely believes it is too heavy to climb higher.
+2. The cruising speeds become inefficient, and the plane's calculated balance (Center of Gravity) becomes incorrect.
+3. Pilots miss chances to climb to thinner, fuel saving altitudes, directly burning extra gas and polluting more CO2.
+
+To make matters worse, the industry is shifting toward Sustainable Aviation Fuel (SAF) to help the environment. But SAF is naturally lighter than standard jet fuel (about *0.759 kg/L*). This means older flight computers will miscalculate the weight even more, accidentally punishing the airlines that are trying to go green.
 
 <br>
 
 <a id="the-solution"></a>
 ### The Solution
-I built AeroDENS as a dedicated advisory system to bypass legacy FMS limitations directly in the cockpit. By ingesting realtime hardware in the loop telemetry (Outside Air Temperature, fuel temperature, tank volumes, altitude, and Mach speed), alongside the specific SAF blend ratio, AeroDENS calculates the true, temperature adjusted fuel density on the fly.
+I built AeroDENS as a dedicated advisory system to bypass these outdated flight computer limitations directly in the cockpit. By ingesting real-time telemetry—such as Outside Air Temperature, tank volumes, altitude, and Mach speed—alongside the specific Sustainable Aviation Fuel (SAF) blend, the system calculates the true, temperature-adjusted fuel density on the fly.
 
-By actively identifying and shedding "Phantom Weight," AeroDENS establishes the precise True Gross Weight (TGW) and physical Center of Gravity. The embedded physics engine then translates this into closed loop advisories, giving pilots mathematically proven, actionable guidance for step climbs, trim speed adjustments, and crossfeed balancing. Once the pilot achieves the optimal aerodynamic profile, AeroDENS acts as a live monitoring system, proving the exact kilograms of fuel and CO2 saved.
+With this accurate density established, AeroDENS actively identifies and strips away the imaginary "Phantom Weight." This reveals the aircraft's precise True Gross Weight and physical Center of Gravity. I programmed the embedded physics engine to translate these corrected metrics into clear advisories, giving pilots mathematically proven guidance on exactly when to step climb, adjust trim speeds, and balance fuel tanks.
+
+Once the pilot follows this guidance to reach the optimal aerodynamic profile, the system shifts into a live tracking tool. It continuously monitors and logs the exact kilograms of fuel and CO2 saved during the flight. Economically, this proven efficiency provides airlines with an immediate way to lower Direct Operating Costs (DOC) and combat high passenger fuel surcharges, entirely bypassing the need to replace multi-million-dollar legacy flight computers.
+
+Beyond these financial benefits, it supports the Sustainable Development Goals (SDGs) established by the United Nations
+
+![Sustainable Development Goals](docs/images/sdg.png)
+
+By retrofitting outdated, legacy aviation infrastructure with highly accurate, modern edge computing technology, AeroDENS advances [Industry, Innovation, and Infrastructure (SDG 9)](). This hardware modernization directly drives [Responsible Consumption and Production (SDG 12)]() by eliminating active fuel waste in the air and maximizing the physical efficiency of expensive Sustainable Aviation Fuels (SAF). Ultimately, these operational improvements deliver measurable [Climate Action (SDG 13)](), cutting carbon emissions and greenhouse gas pollution by precisely guiding the aircraft to its most fuel efficient cruising altitude.
 
 ---
 
